@@ -11,10 +11,10 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
 # Добавляем четыре проекта
-add_executable(TCPServer tcp_server.cpp)
-add_executable(TCPClient tcp_client.cpp)
-add_executable(UDPServer udp_server.cpp)
-add_executable(UDPClient udp_client.cpp)
+add_executable(TCPServer src/tcp_server.cpp)
+add_executable(TCPClient src/tcp_client.cpp)
+add_executable(UDPServer src/udp_server.cpp)
+add_executable(UDPClient src/udp_client.cpp)
 
 # Просим компоновщик подключить библиотеку для поддержки потоков
 set(THREADS_PREFER_PTHREAD_FLAG ON)
