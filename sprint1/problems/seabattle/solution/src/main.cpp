@@ -108,7 +108,7 @@ void StartServer(const SeabattleField& field, unsigned short port) {
 
     // TODO: реализуйте самостоятельно
 
-    agent.StartGame(socket, false);
+    //agent.StartGame(socket, false);
 };
 
 void StartClient(const SeabattleField& field, const std::string& ip_str, unsigned short port) {
@@ -116,7 +116,7 @@ void StartClient(const SeabattleField& field, const std::string& ip_str, unsigne
 
     // TODO: реализуйте самостоятельно
 
-    agent.StartGame(socket, true);
+    //agent.StartGame(socket, true);
 };
 
 int main(int argc, const char** argv) {
