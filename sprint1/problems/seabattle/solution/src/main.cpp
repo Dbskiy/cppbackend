@@ -81,10 +81,10 @@ public:
                 std::string str;
                 std::getline(std::cin, str);
 
-                std::string_view myMove (str);
+                std::string_view myMove(str);
                 std::optional<std::pair<int, int>> coordinates = ParseMove(myMove);
 
-                Send(socket, str, ec);
+                Send(socket, std::move(str), ec);
 
                 std::string myResult = Read(socket, ec);
                 std::cout << myResult << std::endl;
@@ -165,8 +165,7 @@ private:
 
     void Send(tcp::socket& socket, const std::string& move, boost::system::error_code ec)
     {
-        std::string temp = move + "\n";
-        socket.write_some(net::buffer(temp), ec);
+        socket.write_some(net::buffer(std::move(move + "\n")), ec);
 
         if (ec) {
             std::cerr << "Error sending data"sv << std::endl;
@@ -177,14 +176,12 @@ private:
     {
         net::streambuf stream_buf;
         net::read_until (socket, stream_buf, '\n', ec);
-        std::string temp{ std::istreambuf_iterator<char>(&stream_buf),
+        std::string coordinates{ std::istreambuf_iterator<char>(&stream_buf),
             std::istreambuf_iterator<char>() };
         if (ec) {
             std::cerr << "Error reading data"sv << std::endl;
         }
-        std::string coordinates = temp.substr(0, temp.size() - 1);
-
-        return coordinates;
+        return coordinates.substr(0, coordinates.size() - 1);
     }
     
 
@@ -196,7 +193,7 @@ private:
 void StartServer(const SeabattleField& field, unsigned short port) {
     SeabattleAgent agent(field);
 
-    bool my_initiative = false;
+    bool my_initiative = true;
 
     net::io_context io_context;
 
