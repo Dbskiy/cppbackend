@@ -133,7 +133,7 @@ private:
 		logger_.LogMessage("Start marinading onion"sv);
 		marinade_timer_.async_wait([self = shared_from_this()](sys::error_code ec) {
 			self->OnOnionMarinaded(ec);
-		});
+			});
 	}
 
 	void OnOnionMarinaded(sys::error_code ec) {
