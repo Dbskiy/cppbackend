@@ -193,7 +193,7 @@ private:
 void StartServer(const SeabattleField& field, unsigned short port) {
     SeabattleAgent agent(field);
 
-    bool my_initiative = true;
+    bool my_initiative = false;
 
     net::io_context io_context;
 
