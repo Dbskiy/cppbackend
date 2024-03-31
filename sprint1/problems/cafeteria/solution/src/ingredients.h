@@ -28,7 +28,7 @@ public:
             throw std::logic_error("Frying already started");
         }
 
-        // Запрещаем повторный вызов StartFry
+        //// Запрещаем повторный вызов StartFry
         frying_start_time_ = Clock::now();
 
         // Готовимся занять газовую плиту
@@ -91,33 +91,75 @@ public:
     // handler
     void StartBake(GasCooker& cooker, Handler handler) {
         // Реализуйте этот метод аналогично Sausage::StartFry
-        assert(!"Bread::StartBake is not implemented");
-        throw std::logic_error("Bread::StartBake is not implemented");
+        /*assert(!"Bread::StartBake is not implemented");
+        throw std::logic_error("Bread::StartBake is not implemented");*/
+
+        // Метод StartFry можно вызвать только один раз
+        if (baking_start_time_) {
+            throw std::logic_error("Baking already started");
+        }
+
+        // Запрещаем повторный вызов StartBake
+        baking_start_time_ = Clock::now();
+
+        // Готовимся занять газовую плиту
+        gas_cooker_lock_ = GasCookerLock{ cooker.shared_from_this() };
+
+        // Занимаем горелку для начала приготовления.
+        // Чтобы продлить жизнь текущего объекта, захватываем shared_ptr в лямбде
+        cooker.UseBurner([self = shared_from_this(), handler = std::move(handler)] {
+            // Запоминаем время фактического начала приготовления
+            self->baking_start_time_ = Clock::now();
+            handler();
+            });
     }
 
     // Останавливает приготовление хлеба и освобождает горелку.
-    void StopBaking() {
+    void StopBake() {
         // Реализуйте этот метод по аналогии с Sausage::StopFry
-        assert(!"Bread::StopBaking is not implemented");
-        throw std::logic_error("Bread::StopBaking is not implemented");
+       /* assert(!"Bread::StopBaking is not implemented");
+        throw std::logic_error("Bread::StopBaking is not implemented");*/
+
+        if (!baking_start_time_) {
+            throw std::logic_error("Baking has not started");
+        }
+
+        if (baking_end_time_) {
+            throw std::logic_error("Baking has already stopped");
+        }
+
+        baking_end_time_ = Clock::now();
+        // Освобождаем горелку
+        gas_cooker_lock_.Unlock();
     }
 
     // Информирует, испечён ли хлеб
     bool IsCooked() const noexcept {
         // Реализуйте этот метод аналогично Sausage::IsCooked
-        assert(!"Bread::IsCooked is not implemented");
-        return false;
+       /* assert(!"Bread::IsCooked is not implemented");
+        return false;*/
+
+        return baking_start_time_.has_value() && baking_end_time_.has_value();
     }
 
     // Возвращает продолжительность выпекания хлеба. Бросает исключение, если хлеб не был испечён
     Clock::duration GetBakingDuration() const {
         // Реализуйте этот метод аналогично Sausage::GetCookDuration
-        assert(!"Bread::GetBakingDuration is not implemented");
-        throw std::logic_error("Bread::GetBakingDuration is not implemented");
+        /*assert(!"Bread::GetBakingDuration is not implemented");*/
+        //throw std::logic_error("Bread::GetBakingDuration is not implemented");
+
+        if (!baking_start_time_ || !baking_end_time_) {
+            throw std::logic_error("Sausage has not been cooked");
+        }
+        return *baking_end_time_ - *baking_start_time_;
+
     }
 
 private:
     int id_;
+    GasCookerLock gas_cooker_lock_;
+    std::optional<Clock::time_point> baking_start_time_;
+    std::optional<Clock::time_point> baking_end_time_;
 };
 
 // Склад ингредиентов (возвращает ингредиенты с уникальным id)
