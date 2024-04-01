@@ -25,12 +25,20 @@ struct ContentType {
     // При необходимости внутрь ContentType можно добавить и другие типы контента
 };
 
+struct Allow {
+    Allow() = delete;
+    constexpr static std::string_view ALLOW = "GET, HEAD"sv;
+};
+
 // Создаёт StringResponse с заданными параметрами
 StringResponse MakeStringResponse(http::status status, std::string_view body, unsigned http_version,
                                   bool keep_alive,
-                                  std::string_view content_type = ContentType::TEXT_HTML) {
+                                  std::string_view content_type = ContentType::TEXT_HTML, std::string_view allow = Allow::ALLOW) {
     StringResponse response(status, http_version);
     response.set(http::field::content_type, content_type);
+    if (status == http::status::method_not_allowed) {
+        response.set(http::field::allow, allow);
+    }
     response.body() = body;
     response.content_length(body.size());
     response.keep_alive(keep_alive);
@@ -39,7 +47,22 @@ StringResponse MakeStringResponse(http::status status, std::string_view body, un
 
 StringResponse HandleRequest(StringRequest&& req) {
     // Подставьте сюда код из синхронной версии HTTP-сервера
-    return MakeStringResponse(http::status::ok, "OK"sv, req.version(), req.keep_alive());
+    const auto text_response = [&req](http::status status, std::string_view text) {
+        return MakeStringResponse(status, text, req.version(), req.keep_alive());
+        };
+
+    if (req.method() == http::verb::get) {
+        std::string str = "Hello, "s + std::string(req.target().substr(1));
+        return text_response(http::status::ok, std::string_view(str.data(), str.size()));
+    }
+
+    else if (req.method() == http::verb::head) {
+        return text_response(http::status::ok, ""sv);
+    }
+    else {
+        return text_response(http::status::method_not_allowed, "Invalid method"sv);
+    }
+
 }
 
 // Запускает функцию fn на n потоках, включая текущий
@@ -66,6 +89,7 @@ int main() {
     net::signal_set signals(ioc, SIGINT, SIGTERM);
     signals.async_wait([&ioc](const sys::error_code& ec, [[maybe_unused]] int signal_number) {
         if (!ec) {
+            std::cout << "Signal "sv << signal_number << " received"sv << std::endl;
             ioc.stop();
         }
     });
@@ -73,7 +97,7 @@ int main() {
     const auto address = net::ip::make_address("0.0.0.0");
     constexpr net::ip::port_type port = 8080;
     http_server::ServeHttp(ioc, {address, port}, [](auto&& req, auto&& sender) {
-        // sender(HandleRequest(std::forward<decltype(req)>(req)));
+        sender(HandleRequest(std::forward<decltype(req)>(req)));
     });
 
     // Эта надпись сообщает тестам о том, что сервер запущен и готов обрабатывать запросы
