@@ -9,8 +9,6 @@ namespace http = beast::http;
 
 using namespace std::literals;
 
-// Запрос, тело которого представлено в виде строки
-using StringRequest = http::request<http::string_body>;
 // Ответ, тело которого представлено в виде строки
 using StringResponse = http::response<http::string_body>;
 
@@ -42,53 +40,130 @@ public:
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
         // Обработать запрос request и отправить ответ, используя send
-        //const auto text_response = [&req](http::status status, std::string_view text) {
-        //    MakeStringResponse(status, text, req.version()); //написать функцию?
-        //    };
-
 
         if (req.method() == http::verb::get) {
+
+            std::string response_body = "";
+
             if (req.target() == "/api/v1/maps"s) {
-                std::vector<model::Map> maps = game_.GetMaps();
-                std::string str_maps = "";
-                for (int i = 0; i < maps.size() ; i++) {
-                    str_maps += R"([{"id": )" + *maps[i].GetId() + R"("name": )" + maps[i].GetName() + R"(}])" + '\n';
-                }
-                send(MakeStringResponse(http::status::ok, std::string_view(str_maps.data(), str_maps.size()), req.version())); //функция для отправки ответа
+
+                
+                send(MakeStringResponse(http::status::ok, MapsResponse(response_body), req.version()));
             }
             else if (req.target().substr(0, 13) == "/api/v1/maps/") {
-                std::string map_id_str(req.target().substr(13));
-                model::Map::Id map_id(map_id_str.c_str());
-                if (game_.FindMap(map_id) != nullptr) {
-                    //send(std::move(text_response(http::status::ok, "{MAKAKA}"sv)));
-                    send(MakeStringResponse(http::status::ok, "{MAKAKA}"sv, req.version()));
+
+                std::string map_id(req.target().substr(13));
+                model::Map::Id id(map_id.c_str());
+
+                if (game_.FindMap(id) != nullptr) {
+                    //MapById(response_body, map_id, id);
+                    send(MakeStringResponse(http::status::ok, MapById(response_body, map_id, id), req.version()));
                 }
                 else {
-                    std::string_view mapNotFound = R"({
-"code": "mapNotFound",
-"message": "Map not found"
-})";
-                    //send(std::move(text_response(http::status::not_found, mapNotFound)));
-                    send(MakeStringResponse(http::status::not_found, mapNotFound, req.version()));
+                    send(MakeStringResponse(http::status::not_found, MapNotFound(response_body), req.version()));
                 }
             }
             else {
-                std::string_view bad_request = R"({
-"code": "badRequest",
-"message": "Bad request"
-})";
-                //send(std::move(text_response(http::status::bad_request, bad_request)));
-                send(MakeStringResponse(http::status::bad_request, bad_request, req.version()));
+                send(MakeStringResponse(http::status::bad_request, BadRequest(response_body), req.version()));
             }
         }
         else {
-            //send(std::move(text_response(http::status::method_not_allowed, "Invalid method"sv)));
-            send(MakeStringResponse(http::status::method_not_allowed, "Invalid method"sv, req.version()));
+            send(MakeStringResponse(http::status::method_not_allowed, "{ Invalid Method }"sv, req.version()));
         }
-        //send(response);
     }
 
 private:
+    std::string_view MapsResponse(std::string& response_body) {
+        std::vector<model::Map> maps = game_.GetMaps();
+        for (const auto& map : maps) {
+            response_body += R"([{"id": ")" + *map.GetId() + R"(", "name": ")" + map.GetName() + R"("})"; //мб надо будет добавить \n
+        }
+
+        response_body += "]";
+
+        return std::string_view(response_body.data(), response_body.size());
+    }
+
+    std::string_view MapById(std::string& response_body, const std::string& map_id, model::Map::Id id) {
+        const model::Map* this_map = game_.FindMap(id);
+
+        response_body += "{\n  ";
+        response_body += R"("id": ")" + *this_map->GetId() + R"(",)";
+        response_body += +"\n  ";
+        response_body += R"("name": ")" + this_map->GetName() + R"(",)";
+        response_body += +"\n  ";
+        response_body += R"("roads": [)";
+        for (const auto& road : this_map->GetRoads()) {
+            response_body += "\n    ";
+            response_body += R"({ "x0": )" + std::to_string(road.GetStart().x) + R"(, )";
+            response_body += R"("y0": )" + std::to_string(road.GetStart().y) + R"(, )";
+
+            if (road.IsHorizontal()) {
+                response_body += R"("x1": )" + std::to_string(road.GetEnd().x) + R"( },)";
+            }
+            else {
+                response_body += R"("y1": )" + std::to_string(road.GetEnd().y) + R"( },)";
+            }
+        }
+
+        response_body.pop_back();
+        response_body += "\n  ],\n  ";
+
+        response_body += R"("buildings": [)";
+
+        if (!this_map->GetBuildings().empty()) {
+            for (const auto& building : this_map->GetBuildings()) {
+                response_body += "\n    ";
+                response_body += R"({ "x": )" + std::to_string(building.GetBounds().position.x) + R"(, )";
+                response_body += R"("y": )" + std::to_string(building.GetBounds().position.y) + R"(, )";
+                response_body += R"("w": )" + std::to_string(building.GetBounds().size.width) + R"(, )";
+                response_body += R"("h": )" + std::to_string(building.GetBounds().size.height) + R"( },)";
+            }
+            response_body.pop_back();
+            response_body += "\n  ";
+        }
+        response_body += "],\n  ";
+
+        response_body += R"("offices": [)";
+
+        if (!this_map->GetOffices().empty()) {
+            for (const auto& office : this_map->GetOffices()) {
+                response_body += "\n    ";
+                response_body += R"({ "id": ")" + *office.GetId() + R"(", )";
+                response_body += R"("x": )" + std::to_string(office.GetPosition().x) + R"(, )";
+                response_body += R"("y": )" + std::to_string(office.GetPosition().y) + R"(, )";
+                response_body += R"("offsetX": )" + std::to_string(office.GetOffset().dx) + R"(, )";
+                response_body += R"("offsetY": )" + std::to_string(office.GetOffset().dy) + R"( },)";
+            }
+            response_body.pop_back();
+            response_body += "\n";
+        }
+
+        response_body += "  ]\n";
+        response_body += R"(})";
+        return std::string_view(response_body.data(), response_body.size());
+    }
+
+    std::string_view MapNotFound(std::string& response_body) {
+        response_body += "{\n";
+        response_body += R"("code": "mapNotFound",)";
+        response_body += "\n";
+        response_body += R"("message": "Map not found")";
+        response_body += "\n}";
+
+        return std::string_view(response_body.data(), response_body.size());
+    }
+
+    std::string_view BadRequest(std::string& response_body) {
+        response_body += "{\n";
+        response_body += R"("code": "badRequest",)";
+        response_body += "\n";
+        response_body += R"("message": "Bad request")";
+        response_body += "\n}";
+
+        return std::string_view(response_body.data(), response_body.size());
+    }
+
     model::Game& game_;
 };
 
