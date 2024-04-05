@@ -45,12 +45,12 @@ public:
 
             std::string response_body = "";
 
-            if (req.target() == "/api/v1/maps"s) {
+            if (req.target() == "/api/v1/maps/"s) {
 
                 
                 send(MakeStringResponse(http::status::ok, MapsResponse(response_body), req.version()));
             }
-            else if (req.target().substr(0, 13) == "/api/v1/maps/") {
+            else if (req.target().substr(0, 13) == "/api/v1/maps/" && req.target().size() > 13) {
 
                 std::string map_id(req.target().substr(13));
                 model::Map::Id id(map_id.c_str());
