@@ -45,7 +45,7 @@ public:
 
             std::string response_body = "";
 
-            if (req.target() == "/api/v1/maps/"s) {
+            if (req.target() == "/api/v1/maps"s || req.target() == "/api/v1/maps/"s) {
 
                 
                 send(MakeStringResponse(http::status::ok, MapsResponse(response_body), req.version()));
