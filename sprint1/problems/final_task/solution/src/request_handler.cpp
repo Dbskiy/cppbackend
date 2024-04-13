@@ -40,56 +40,14 @@ namespace http_handler {
         map["id"] = *this_map->GetId();
         map["name"] = this_map->GetName();
 
-        json::array roads;
-        json::array buildings;
-        json::array offices;
-
-        for (const auto& road : this_map->GetRoads()) {
-            json::object coordinates;
-            coordinates["x0"] = road.GetStart().x;
-            coordinates["y0"] = road.GetStart().y;
-
-            if (road.IsHorizontal()) {
-                coordinates["x1"] = road.GetEnd().x;
-            }
-            else {
-                coordinates["y1"] = road.GetEnd().y;
-            }
-
-            roads.push_back(coordinates);
-        }
-        map["roads"] = std::move(roads);
+        map["roads"] = RoadsProperties(this_map);
 
         if (!this_map->GetBuildings().empty()) {
-            for (const auto& building : this_map->GetBuildings()) {
-                json::object properties;
-
-                properties["x"] = building.GetBounds().position.x;
-                properties["y"] = building.GetBounds().position.y;
-
-                properties["w"] = building.GetBounds().size.width;
-                properties["h"] = building.GetBounds().size.height;
-
-                buildings.push_back(properties);
-            }
-            map["buildings"] = std::move(buildings);
+            map["buildings"] = BuildingsProperties(this_map);
         }
 
         if (!this_map->GetOffices().empty()) {
-            for (const auto& office : this_map->GetOffices()) {
-                json::object properties;
-
-                properties["id"] = *office.GetId();
-
-                properties["x"] = office.GetPosition().x;
-                properties["y"] = office.GetPosition().y;
-
-                properties["offsetX"] = office.GetOffset().dx;
-                properties["offsetY"] = office.GetOffset().dy;
-
-                offices.push_back(properties);
-            }
-            map["offices"] = std::move(offices);
+            map["offices"] = OfficesProperties(this_map);
         }
 
         response_body = json::serialize(map);
@@ -130,6 +88,63 @@ namespace http_handler {
         return std::string_view(response_body.data(), response_body.size());
     }
 
+    json::array RequestHandler::RoadsProperties(const model::Map* this_map)
+    {
+        json::array roads;
+        for (const auto& road : this_map->GetRoads()) {
+            json::object coordinates;
+            coordinates["x0"] = road.GetStart().x;
+            coordinates["y0"] = road.GetStart().y;
 
+            if (road.IsHorizontal()) {
+                coordinates["x1"] = road.GetEnd().x;
+            }
+            else {
+                coordinates["y1"] = road.GetEnd().y;
+            }
+
+            roads.push_back(coordinates);
+        }
+        return roads;
+    }
+
+    json::array RequestHandler::BuildingsProperties(const model::Map* this_map)
+    {
+        json::array buildings;
+        for (const auto& building : this_map->GetBuildings()) {
+            json::object properties;
+
+            properties["x"] = building.GetBounds().position.x;
+            properties["y"] = building.GetBounds().position.y;
+
+            properties["w"] = building.GetBounds().size.width;
+            properties["h"] = building.GetBounds().size.height;
+
+            buildings.push_back(properties);
+        }
+        return buildings;
+    }
+
+    json::array RequestHandler::OfficesProperties(const model::Map* this_map)
+    {
+        json::array offices;
+
+        for (const auto& office : this_map->GetOffices()) {
+            json::object properties;
+
+            properties["id"] = *office.GetId();
+
+            properties["x"] = office.GetPosition().x;
+            properties["y"] = office.GetPosition().y;
+
+            properties["offsetX"] = office.GetOffset().dx;
+            properties["offsetY"] = office.GetOffset().dy;
+
+            offices.push_back(properties);
+        }
+        return offices;
+    }
+
+    
 
 }  // namespace http_handler

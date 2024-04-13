@@ -72,6 +72,12 @@ private:
 
     std::string_view InvalidMethod(std::string&);
 
+    json::array RoadsProperties(const model::Map*);
+
+    json::array BuildingsProperties(const model::Map*);
+
+    json::array OfficesProperties(const model::Map*);
+
     model::Game& game_;
 };
 
