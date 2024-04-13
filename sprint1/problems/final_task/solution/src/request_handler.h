@@ -34,9 +34,9 @@ public:
 
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
+        std::string response_body = "";
         if (req.method() == http::verb::get) {
 
-            std::string response_body = "";
 
             if (req.target() == "/api/v1/maps"s || req.target() == "/api/v1/maps/"s) {
                 send(MakeStringResponse(http::status::ok, MapsResponse(response_body), req.version()));
@@ -57,7 +57,7 @@ public:
             }
         }
         else {
-            send(MakeStringResponse(http::status::method_not_allowed, "{ Invalid Method }"sv, req.version()));
+            send(MakeStringResponse(http::status::method_not_allowed, InvalidMethod(response_body), req.version()));
         }
     }
 
@@ -69,6 +69,8 @@ private:
     std::string_view MapNotFound(std::string&);
 
     std::string_view BadRequest(std::string&);
+
+    std::string_view InvalidMethod(std::string&);
 
     model::Game& game_;
 };

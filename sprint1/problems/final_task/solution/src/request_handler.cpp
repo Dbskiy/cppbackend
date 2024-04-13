@@ -121,6 +121,15 @@ namespace http_handler {
         return std::string_view(response_body.data(), response_body.size());
     }
 
+    std::string_view RequestHandler::InvalidMethod(std::string& response_body)
+    {
+        json::string invalidMethod("Invalid Method");
+
+        response_body = json::serialize(invalidMethod);
+
+        return std::string_view(response_body.data(), response_body.size());
+    }
+
 
 
 }  // namespace http_handler
