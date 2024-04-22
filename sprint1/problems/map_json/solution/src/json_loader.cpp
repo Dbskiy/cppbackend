@@ -8,6 +8,7 @@
 namespace json = boost::json;
 using namespace std::literals;
 
+//проверить as_object()
 namespace json_loader {
 
     model::Game LoadGame(const std::filesystem::path& json_path) {
@@ -23,10 +24,7 @@ namespace json_loader {
         std::string json_str;
         std::string str;
         while (std::getline(f_map, str)) {
-
             json_str += str;
-
-            //std::cout << str << std::endl;
         }
 
         auto json_data = json::parse(json_str);
@@ -34,64 +32,72 @@ namespace json_loader {
         model::Game game;
 
 
+        const json::array& all_maps = json_data.as_object().at("maps").as_array();
 
-        const int maps_size = json_data.as_object().at("maps").as_array().size();
-
-        for (int i = 0; i < maps_size; i++) {
-            //добавление id и имени в карту
-            model::Map::Id map_id(json_data.as_object().at("maps").as_array().at(i).at("id").as_string().c_str());
-            std::string name = json_data.as_object().at("maps").as_array().at(i).at("name").as_string().c_str();
+        for (const auto& map_json : all_maps) {
+            model::Map::Id map_id(map_json.at("id").as_string().c_str());
+            std::string name = map_json.at("name").as_string().c_str();
 
             model::Map map(map_id, name);
 
-            //новый код
-            //добавление дороги в карту
-            const json::array& roads_array = json_data.as_object().at("maps").as_array().at(i).at("roads").as_array();
-            for (const auto& road : roads_array) {
-                int x0 = road.as_object().at("x0").as_int64();
-                int y0 = road.as_object().at("y0").as_int64();
+            InsertRoads(map, map_json);
 
-                if (road.as_object().contains("x1")) {
-                    int x1 = road.as_object().at("x1").as_int64();
-                    map.AddRoad(model::Road(model::Road::HORIZONTAL, { x0, y0 }, x1));
-                }
-                else {
-                    int y1 = road.as_object().at("y1").as_int64();
-                    map.AddRoad(model::Road(model::Road::VERTICAL, { x0, y0 }, y1));
-                }
-            }
-
-
-            const json::array& buildings = json_data.as_object().at("maps").as_array().at(i).at("buildings").as_array();
-            if (!buildings.empty()) {
-                for (const auto& building : buildings) {
-                    int x = building.as_object().at("x").as_int64();
-                    int y = building.as_object().at("y").as_int64();
-
-                    int w = building.as_object().at("w").as_int64();
-                    int h = building.as_object().at("h").as_int64();
-
-                    map.AddBuilding(model::Building({ {x, y}, {w, h} }));
-                }
-            }
-
-            const json::array& offices = json_data.as_object().at("maps").as_array().at(i).at("offices").as_array();
-            if (!offices.empty()) {
-                for (const auto& office : offices) {
-                    model::Office::Id office_id(office.as_object().at("id").as_string().c_str());
-                    int x = office.as_object().at("x").as_int64();
-                    int y = office.as_object().at("y").as_int64();
-
-                    int offsetX = office.as_object().at("offsetX").as_int64();
-                    int offsetY = office.as_object().at("offsetY").as_int64();
-
-                    map.AddOffice(model::Office(office_id, { x, y }, { offsetX, offsetY }));
-                }
-            }
-
+            InsertBuildings(map, map_json);
+            
+            InsertOffices(map, map_json);
+            
             game.AddMap(map);
 
         }
         return game;
     }
+
+    void InsertRoads(model::Map& map, const auto& map_json) {
+        const json::array& roads_array = map_json.at("roads").as_array();
+        for (const auto& road : roads_array) {
+            int x0 = road.at("x0").as_int64();
+            int y0 = road.at("y0").as_int64();
+
+            if (road.as_object().contains("x1")) {
+                int x1 = road.at("x1").as_int64();
+                map.AddRoad(model::Road(model::Road::HORIZONTAL, { x0, y0 }, x1));
+            }
+            else {
+                int y1 = road.at("y1").as_int64();
+                map.AddRoad(model::Road(model::Road::VERTICAL, { x0, y0 }, y1));
+            }
+        }
+    }
+
+    void InsertBuildings(model::Map& map, const auto& map_json) {
+        const json::array& buildings = map_json.at("buildings").as_array();
+        if (!buildings.empty()) {
+            for (const auto& building : buildings) {
+                int x = building.at("x").as_int64();
+                int y = building.at("y").as_int64();
+
+                int w = building.at("w").as_int64();
+                int h = building.at("h").as_int64();
+
+                map.AddBuilding(model::Building({ {x, y}, {w, h} }));
+            }
+        }
+    }
+
+    void InsertOffices(model::Map& map, const auto& map_json) {
+        const json::array& offices = map_json.at("offices").as_array();
+        if (!offices.empty()) {
+            for (const auto& office : offices) {
+                model::Office::Id office_id(office.at("id").as_string().c_str());
+                int x = office.at("x").as_int64();
+                int y = office.at("y").as_int64();
+
+                int offsetX = office.at("offsetX").as_int64();
+                int offsetY = office.at("offsetY").as_int64();
+
+                map.AddOffice(model::Office(office_id, { x, y }, { offsetX, offsetY }));
+            }
+        }
+    }
+
 }  // namespace json_loader
