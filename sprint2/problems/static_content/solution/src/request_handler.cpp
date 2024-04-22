@@ -213,7 +213,13 @@ namespace http_handler {
         using namespace http;
         using namespace static_content;
 
-        fs::path fs_path{ URL_decode(static_file_path).substr(1)};
+        fs::path fs_path;
+        if (static_file_path[0] == '\\' || static_file_path[0] == '/') {
+            fs_path = URL_decode(static_file_path).substr(1);
+        }
+        else {
+            fs_path = URL_decode(static_file_path);
+        }
 
         fs::path abs_fs_path = fs::weakly_canonical(fs_path);
 
