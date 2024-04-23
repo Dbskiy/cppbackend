@@ -83,7 +83,6 @@ public:
                 send(s_res);
             }
 
-            //send(MakeStaticFileResponse(req.target(), content_root_path_, req.version()));
         }
     }
 

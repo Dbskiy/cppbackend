@@ -212,14 +212,22 @@ namespace http_handler {
     {
         using namespace http;
         using namespace static_content;
+        std::string_view static_f_path;
 
         fs::path fs_path;
         if (static_file_path[0] == '\\' || static_file_path[0] == '/') {
-            fs_path = URL_decode(static_file_path).substr(1);
+
+            static_f_path = static_file_path.substr(1);
         }
         else {
-            fs_path = URL_decode(static_file_path);
+            static_f_path = static_file_path;
         }
+
+        if (static_f_path == "") {
+            static_f_path = "index.html";
+        }
+
+        fs_path = URL_decode(static_f_path);
 
         fs::path abs_fs_path = fs::weakly_canonical(fs_path);
 
@@ -243,7 +251,7 @@ namespace http_handler {
                 FileResponse res;
                 res.version(http_version);
                 res.result(status::ok);
-                res.insert(field::content_type, DefineContentType(static_file_path));
+                res.insert(field::content_type, DefineContentType(static_f_path));
 
                 res.body() = std::move(file);
                 res.prepare_payload();
@@ -272,7 +280,7 @@ namespace http_handler {
              FileResponse res;
              res.version(http_version);
              res.result(status::ok);
-             res.insert(field::content_type, DefineContentType(static_file_path));
+             res.insert(field::content_type, DefineContentType(static_f_path));
 
              res.body() = std::move(file);
              res.prepare_payload();
