@@ -12,8 +12,28 @@ namespace http_handler {
 
 	}
 
+    FileResponse RequestHandler::StaticFileResponseBody(fs::path& static_file_path, std::string_view content_type, unsigned http_version)
+    {
+        using namespace http;
+        file_body::value_type file;
+        if (sys::error_code ec; file.open(static_file_path.string().c_str(), beast::file_mode::read, ec), ec) {
+            std::cout << "Failed to open file "sv << static_file_path.string() << std::endl;
 
-    std::string_view RequestHandler::DefineContentType(std::string_view file_path)
+            throw ec.what();
+        }
+
+        FileResponse res;
+        res.version(http_version);
+        res.result(status::ok);
+        res.insert(field::content_type, DefineContentType(content_type));
+
+        res.body() = std::move(file);
+        res.prepare_payload();
+        return res;
+    }
+
+
+    std::string_view RequestHandler::DefineContentType(const std::string_view& file_path)
     {
         std::unordered_map<std::string_view, std::string_view> content_types{
             {"json", ContentType::APP_JSON},
@@ -37,7 +57,7 @@ namespace http_handler {
             {"mpeg", ContentType::AUDIO_MP3},
         };
 
-        int index = file_path.find_last_of(".");
+        size_t index = file_path.find_last_of(".");
         if (index == std::string::npos) {
             // Если расширение файла не найдено, возвращаем текстовый тип по умолчанию
             return ContentType::APP_OCTET_STREAM;
@@ -183,7 +203,7 @@ namespace http_handler {
         return offices;
     }
 
-    StringResponse RequestHandler::MakeApiResponse(std::string_view config_file_path, unsigned http_version)
+    StringResponse RequestHandler::MakeApiResponse(const std::string_view& config_file_path, const unsigned http_version)
     {
         std::string response_body = "";
 
@@ -208,90 +228,47 @@ namespace http_handler {
         }
     }
 
-    response_body RequestHandler::MakeStaticFileResponse(std::string_view static_file_path, fs::path& root_path, unsigned http_version)
+    response_body RequestHandler::MakeStaticFileResponse(const std::string_view& static_file_path, const fs::path& root_path, const unsigned http_version)
     {
         using namespace http;
         using namespace static_content;
-        std::string_view static_f_path;
 
-        fs::path fs_path;
-        if (static_file_path[0] == '\\' || static_file_path[0] == '/') {
+        std::string_view static_f_path = ToValidStaticFilePath(static_file_path);
 
-            static_f_path = static_file_path.substr(1);
+        fs::path rel_fs_path = URL_decode(static_f_path);
+
+        fs::path abs_fs_path = fs::weakly_canonical(rel_fs_path);
+
+        std::cout << "abs_fs_path "sv << abs_fs_path.string() << std::endl; //для отладки
+
+        if (fs::exists(abs_fs_path)) {
+            if (IsSubPath(abs_fs_path, root_path)) {
+                return StaticFileResponseBody(abs_fs_path, static_f_path, http_version);
+            }
+            else {
+                //файл вне корневого каталога со статическими файлами
+                return MakeStringResponse(status::bad_request, "Bad Request: trying to get inaccessible file!"sv, http_version, ContentType::TEXT_PLAIN);
+            }
         }
         else {
-            static_f_path = static_file_path;
-        }
-
-        if (static_f_path == "") {
-            static_f_path = "index.html";
-        }
-
-        fs_path = URL_decode(static_f_path);
-
-        fs::path abs_fs_path = fs::weakly_canonical(fs_path);
-
-        std::cout << "abs_fs_path "sv << abs_fs_path.string() << std::endl;
-
-        //путь не совпадает и файла в текующей дир не сущ
-        if (!IsSubPath(abs_fs_path, root_path) && !fs::exists(abs_fs_path)) { //если не совпадают
-            //создаем новый путь, добавив в начало директорию со стат файлами
-            fs::path new_fs_path = fs::weakly_canonical(root_path / fs_path);
-            std::cout << "new_fs_path "sv << new_fs_path.string() << std::endl;
-
-            //если существует
-            if (fs::exists(new_fs_path) && fs::is_regular_file(new_fs_path)) {
-                file_body::value_type file;
-                if (sys::error_code ec; file.open(new_fs_path.string().c_str(), beast::file_mode::read, ec), ec) {
-                    std::cout << "Failed to open file "sv << new_fs_path.string() << std::endl;
-
-                    throw ec.what();
-                }
-
-                FileResponse res;
-                res.version(http_version);
-                res.result(status::ok);
-                res.insert(field::content_type, DefineContentType(static_f_path));
-
-                res.body() = std::move(file);
-                res.prepare_payload();
-                return res;
+            if (IsSubPath(abs_fs_path, root_path)) {
+                //файл не существует
+                return MakeStringResponse(status::not_found, "File Not Found"sv, http_version, ContentType::TEXT_PLAIN);
             }
-            else { //если ни там, ни там не сущ
-                //404
-                StringResponse res = MakeStringResponse(status::not_found, "File Not Found"sv, http_version, ContentType::TEXT_PLAIN);
-                return res;
+
+            //иначе создаем новый путь, добавив в начало путь к корневой директории со статическими файлами
+            fs::path new_fs_path = fs::weakly_canonical(root_path / rel_fs_path);
+            std::cout << "new_fs_path "sv << new_fs_path.string() << std::endl; //для отладки
+
+            //если файл существует
+            if (fs::exists(new_fs_path)) {
+                return StaticFileResponseBody(new_fs_path, static_f_path, http_version);
             }
-        }
-        //если путь не совпадает, но файл существует
-        else if (!IsSubPath(abs_fs_path, root_path) && fs::exists(abs_fs_path)){
-            //400
-            StringResponse res = MakeStringResponse(status::bad_request, "Bad Request: trying to get inaccessible file!"sv, http_version, ContentType::TEXT_PLAIN);
-            return res;
-        }
-        else if (IsSubPath(abs_fs_path, root_path) && fs::exists(abs_fs_path)){
-            //пути к папке совпадают и файл существует 
-            file_body::value_type file;
-            if (sys::error_code ec; file.open(abs_fs_path.string().c_str(), beast::file_mode::read, ec), ec) {
-                std::cout << "Failed to open file "sv << abs_fs_path.string() << std::endl;
-            
-                throw ec.what();
-            }
-             FileResponse res;
-             res.version(http_version);
-             res.result(status::ok);
-             res.insert(field::content_type, DefineContentType(static_f_path));
 
-             res.body() = std::move(file);
-             res.prepare_payload();
-             return res;
+            //файл не существует
+            return MakeStringResponse(status::not_found, "File Not Found"sv, http_version, ContentType::TEXT_PLAIN);
 
         }
-        else {
-            StringResponse res = MakeStringResponse(status::not_found, "File Not Found"sv, http_version, ContentType::TEXT_PLAIN);
-            return res;
-        }
-
     }
     
 

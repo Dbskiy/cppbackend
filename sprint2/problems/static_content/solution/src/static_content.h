@@ -4,8 +4,13 @@
 #include <boost/beast/http.hpp>
 #include <string>
 #include <sstream>
+#include "request_handler.h"
 
 namespace fs = std::filesystem;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace sys = boost::system;
+using namespace std::literals;
 
 namespace static_content {
 
@@ -19,5 +24,7 @@ namespace static_content {
     std::string DecToHex(int);
 
     int HexToDec(std::string_view);
+
+    std::string_view ToValidStaticFilePath(std::string_view);
 
 }

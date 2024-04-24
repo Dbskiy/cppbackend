@@ -50,9 +50,9 @@ struct ContentType {
 
 class RequestHandler {
 public:
-    explicit RequestHandler(model::Game& game, fs::path content_root_path) //мб передать rvalue
+    explicit RequestHandler(model::Game& game, const fs::path& content_root_path) 
         : game_{game},
-          content_root_path_{std::move(content_root_path)} {
+          content_root_path_{content_root_path} {
     }
 
     RequestHandler(const RequestHandler&) = delete;
@@ -61,6 +61,7 @@ public:
     // Создаёт StringResponse с заданными параметрами
     StringResponse MakeStringResponse(http::status, std::string_view, unsigned,
         std::string_view);
+    FileResponse StaticFileResponseBody(fs::path&, std::string_view, unsigned);
 
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
@@ -87,7 +88,7 @@ public:
     }
 
 private:
-    std::string_view DefineContentType(std::string_view);
+    std::string_view DefineContentType(const std::string_view&);
 
     std::string_view MapsResponse(std::string&);
 
@@ -105,9 +106,9 @@ private:
 
     json::array OfficesProperties(const model::Map*);
 
-    StringResponse MakeApiResponse(std::string_view, unsigned);
+    StringResponse MakeApiResponse(const std::string_view&, const unsigned);
 
-    response_body MakeStaticFileResponse(std::string_view, fs::path&, unsigned);
+    response_body MakeStaticFileResponse(const std::string_view&, const fs::path&, const unsigned);
 
     model::Game& game_;
 

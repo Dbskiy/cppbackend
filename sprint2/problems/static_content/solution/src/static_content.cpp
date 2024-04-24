@@ -63,4 +63,20 @@ namespace static_content {
     {
         return std::stoi(std::string(hex_str.data(), hex_str.size()), nullptr, 16);
     }
+
+    std::string_view ToValidStaticFilePath(std::string_view static_file_path)
+    {
+        if (static_file_path[0] == '\\' || static_file_path[0] == '/') {
+
+            static_file_path.remove_prefix(1);
+        }
+
+        if (static_file_path == "") {
+            static_file_path = "index.html";
+        }
+
+        return static_file_path;
+    }
+
+   
 }
