@@ -68,8 +68,6 @@ public:
             log_file_ << GetTimeStamp() << ": ";
 
             ((log_file_ << ... << args)) << std::endl;
-
-            log_file_ << std::endl;
         }
     }
 
