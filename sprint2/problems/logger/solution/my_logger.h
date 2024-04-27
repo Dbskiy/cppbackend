@@ -60,8 +60,8 @@ public:
                 log_file_.close();
             }
 
-            /*log_file_.open("/var/log/sample_log_" + current_date_ + ".log", std::ios::app);*/
-            log_file_.open("sample_log_" + current_date_ + ".log", std::ios::app);
+            log_file_.open("/var/log/sample_log_" + current_date_ + ".log", std::ios::app);
+            /*log_file_.open("sample_log_" + current_date_ + ".log", std::ios::app);*/
         }
         if (log_file_.is_open()) {
 
