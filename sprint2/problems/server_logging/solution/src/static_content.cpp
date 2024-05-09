@@ -40,7 +40,7 @@ namespace static_content {
 
         base = fs::weakly_canonical(base);
 
-        std::cout << "Root path: " << base.string() << std::endl;
+        //std::cout << "Root path: " << base.string() << std::endl; ////для отладки
 
 
         // Проверяем, что все компоненты base содержатся внутри path

@@ -32,8 +32,7 @@ namespace http_handler {
         return res;
     }
 
-
-    std::string_view RequestHandler::DefineContentType(const std::string_view& file_path)
+    std::string_view RequestHandler::DefineContentType(const std::string_view file_path)
     {
         std::unordered_map<std::string_view, std::string_view> content_types{
             {"json", ContentType::APP_JSON},
@@ -57,6 +56,8 @@ namespace http_handler {
             {"mpeg", ContentType::AUDIO_MP3},
         };
 
+        if (file_path.find("api") != std::string::npos) return ContentType::APP_JSON;
+
         size_t index = file_path.find_last_of(".");
         if (index == std::string::npos) {
             // Если расширение файла не найдено, возвращаем текстовый тип по умолчанию
@@ -67,6 +68,14 @@ namespace http_handler {
 
         return content_types[extension];
 
+    }
+
+    std::string_view RequestHandler::getResponseContentType() {
+        return res_content_type_;
+    }
+
+    int RequestHandler::getResponseCode() {
+        return res_code_;
     }
 
     std::string_view RequestHandler::MapsResponse(std::string& response_body)
@@ -203,11 +212,11 @@ namespace http_handler {
         return offices;
     }
 
-    StringResponse RequestHandler::MakeApiResponse(const std::string_view& config_file_path, const unsigned http_version)
+    StringResponse RequestHandler::MakeApiResponse(const std::string_view config_file_path, const unsigned http_version)
     {
         std::string response_body = "";
 
-        std::string_view content_type = ContentType::APP_JSON;
+        std::string_view content_type = DefineContentType(config_file_path);
 
         if (config_file_path == "/api/v1/maps"sv || config_file_path == "/api/v1/maps/"sv) {
             return MakeStringResponse(http::status::ok, MapsResponse(response_body), http_version, content_type);
@@ -228,7 +237,7 @@ namespace http_handler {
         }
     }
 
-    response_body RequestHandler::MakeStaticFileResponse(const std::string_view& static_file_path, const fs::path& root_path, const unsigned http_version)
+    response_body RequestHandler::MakeStaticFileResponse(const std::string_view static_file_path, const fs::path& root_path, const unsigned http_version)
     {
         using namespace http;
         using namespace static_content;
@@ -239,7 +248,7 @@ namespace http_handler {
 
         fs::path abs_fs_path = fs::weakly_canonical(rel_fs_path);
 
-        std::cout << "abs_fs_path "sv << abs_fs_path.string() << std::endl; //для отладки
+        //std::cout << "abs_fs_path "sv << abs_fs_path.string() << std::endl; ////для отладки
 
         if (fs::exists(abs_fs_path)) {
             if (IsSubPath(abs_fs_path, root_path)) {
@@ -258,7 +267,7 @@ namespace http_handler {
 
             //иначе создаем новый путь, добавив в начало путь к корневой директории со статическими файлами
             fs::path new_fs_path = fs::weakly_canonical(root_path / rel_fs_path);
-            std::cout << "new_fs_path "sv << new_fs_path.string() << std::endl; //для отладки
+            //std::cout << "new_fs_path "sv << new_fs_path.string() << std::endl; ////для отладки
 
             //если файл существует
             if (fs::exists(new_fs_path)) {

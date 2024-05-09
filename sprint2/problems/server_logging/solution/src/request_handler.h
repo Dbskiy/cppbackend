@@ -1,5 +1,9 @@
 #pragma once
 #define BOOST_BEAST_USE_STD_STRING_VIEW
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+
 #include "http_server.h"
 #include "model.h"
 #include <filesystem>
@@ -7,18 +11,17 @@
 #include "static_content.h"
 #include <unordered_map>
 #include <variant>
+//#include <chrono>
 #include "logger.h"
-//#include <boost/json.hpp> //включен в logger.h
 
 namespace http_handler {
 namespace beast = boost::beast;
 namespace sys = boost::system;
 namespace http = beast::http;
 namespace fs = std::filesystem;
-//namespace json = boost::json;
 
 using namespace std::literals;
-
+//using namespace std::chrono;
 
 // Ответ, тело которого представлено в виде строки
 using StringResponse = http::response<http::string_body>;
@@ -55,18 +58,31 @@ public:
 
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
+        //логируем запрос
+        LogRequest(req);
+
+        system_clock::time_point start_ts = system_clock::now();
+
+        //response_body response = decorated_(std::move(req), std::forward<Send>(send));
+        decorated_(std::move(req), std::forward<Send>(send));
+
+        system_clock::time_point end_ts = system_clock::now();
+
+        auto duration = duration_cast<milliseconds>(end_ts - start_ts);
+
+        LogResponse(decorated_.getResponseCode(), decorated_.getResponseContentType(), duration);
     }
 
 private:
     template <typename Body, typename Allocator>
     static void LogRequest(const http::request<Body, http::basic_fields<Allocator>>& req) {
-        // логирования запроса
+        //обработка запроса
+        logger::LOG(logger::GetReqData(logger::client_ip, req.target(), req.method()), "request recieved"sv);
 
     }
-
-    template <typename Body, typename Allocator>
-    static void LogResponse(const http::request<Body, http::basic_fields<Allocator>>& req) {
-        //Логирование ответа
+    
+    static void LogResponse(const int& code, const std::string_view content_type, const milliseconds& duration) {
+        logger::LOG(logger::GetResData(duration, code, content_type), "response sent"sv);
     }
 
     SomeRequestHandler& decorated_;
@@ -84,32 +100,47 @@ public:
     RequestHandler& operator=(const RequestHandler&) = delete;
 
     // Создаёт StringResponse с заданными параметрами
-    StringResponse MakeStringResponse(http::status, std::string_view, unsigned,
-        std::string_view);
+    StringResponse MakeStringResponse(http::status, std::string_view, unsigned, std::string_view);
     FileResponse StaticFileResponseBody(fs::path&, std::string_view, unsigned);
+    
+    std::string_view DefineContentType(const std::string_view);
 
     template <typename Body, typename Allocator, typename Send>
     void operator()(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send) {
 
         if (req.target().substr(0, 5) == "/api/") {
-            send(MakeApiResponse(req.target(), req.version()));
+            StringResponse ApiResponse = MakeApiResponse(req.target(), req.version());
+            //std::cout << "ApiResponse c_t = " << ApiResponse.find(http::field::content_type)->value() << std::endl;
+            res_content_type_ = ApiResponse.find(http::field::content_type)->value();
+            res_code_ = ApiResponse.result_int();
+            send(ApiResponse); // попробуй std::move
         }
         else {
             response_body response = MakeStaticFileResponse(req.target(), content_root_path_, req.version());
             if (std::holds_alternative<FileResponse>(response)) {
                 FileResponse& f_res = std::get<FileResponse>(response);
+                //std::cout << "f_res in req_handler c_t = " << f_res.find(http::field::content_type)->value() << std::endl;
+                res_content_type_ = f_res.find(http::field::content_type)->value();
+                res_code_ = f_res.result_int();
                 send(f_res);
             } 
             else if (std::holds_alternative<StringResponse>(response)) {
                 StringResponse& s_res = std::get<StringResponse>(response);
+                //std::cout << "s_res in req_handler c_t = " << s_res.find(http::field::content_type)->value() << std::endl;
+                res_content_type_ = s_res.find(http::field::content_type)->value();
+                res_code_ = s_res.result_int();
                 send(s_res);
             }
-
         }
     }
 
+    //для логирования
+    std::string_view getResponseContentType();
+    int getResponseCode();
+
+
+
 private:
-    std::string_view DefineContentType(const std::string_view&);
 
     std::string_view MapsResponse(std::string&);
 
@@ -127,13 +158,16 @@ private:
 
     json::array OfficesProperties(const model::Map*);
 
-    StringResponse MakeApiResponse(const std::string_view&, const unsigned);
+    StringResponse MakeApiResponse(const std::string_view, const unsigned);
 
-    response_body MakeStaticFileResponse(const std::string_view&, const fs::path&, const unsigned);
+    response_body MakeStaticFileResponse(const std::string_view, const fs::path&, const unsigned);
 
     model::Game& game_;
 
     fs::path content_root_path_;
+
+    std::string_view res_content_type_ = "";
+    int res_code_ = 0;
 };
 
 }  // namespace http_handler

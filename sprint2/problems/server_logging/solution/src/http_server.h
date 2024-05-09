@@ -1,14 +1,15 @@
 #pragma once
+#include "logger.h"
 #include "sdk.h"
 
 // boost.beast будет использовать std::string_view вместо boost::string_view
 #define BOOST_BEAST_USE_STD_STRING_VIEW
-//
+
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
-#include<iostream>
+#include <iostream>
 
 namespace http_server {
 
@@ -126,7 +127,12 @@ namespace http_server {
 
     private:
         void AsyncRunSession(tcp::socket&& socket) {
-            std::cout << "Endpoint: " << socket.remote_endpoint().address().to_string() << std::endl; //получение ip клиента
+
+            //присвоение статической переменной client_ip адрес клиента
+
+            //std::cout << "Endpoint: " << socket.remote_endpoint().address().to_string() << std::endl; ////получение ip клиента
+            
+            logger::client_ip = socket.remote_endpoint().address().to_string();
             std::make_shared<Session<RequestHandler>>(std::move(socket), request_handler_)->Run();
         }
 
@@ -151,7 +157,7 @@ namespace http_server {
             using namespace std::literals;
 
             if (ec) {
-                return ReportError(ec, "accept"sv);
+                return ReportError(ec, "accept"sv); //log!!!!
             }
 
             // Асинхронно обрабатываем сессию
