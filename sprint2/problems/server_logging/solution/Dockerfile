@@ -35,3 +35,5 @@ COPY ./data /app/data
 
 # Запускаем игровой сервер
 ENTRYPOINT ["/app/game_server", "/app/data/config.json"]
+
+#пока что не видит файл проекта
