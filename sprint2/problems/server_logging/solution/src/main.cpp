@@ -78,7 +78,7 @@ int main(int argc, const char* argv[]) {
        
         //std::cout << "Server has started..."sv << std::endl;
 
-        logger::LOG(logger::GetServerStartData(port, address.to_string()), "server started"sv);
+        logger::LOG(logger::GetServerStartData(port, address.to_string()), "server has started"sv);
 
         // 6. Запускаем обработку асинхронных операций
         RunWorkers(std::max(1u, num_threads), [&ioc] {
