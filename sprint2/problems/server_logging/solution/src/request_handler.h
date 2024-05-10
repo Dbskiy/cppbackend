@@ -11,7 +11,6 @@
 #include "static_content.h"
 #include <unordered_map>
 #include <variant>
-//#include <chrono>
 #include "logger.h"
 
 namespace http_handler {
@@ -75,7 +74,7 @@ private:
     template <typename Body, typename Allocator>
     static void LogRequest(const http::request<Body, http::basic_fields<Allocator>>& req) {
         //обработка запроса
-        logger::LOG(logger::GetReqData(logger::client_ip, req.target(), req.method()), "request recieved"sv);
+        logger::LOG(logger::GetReqData(logger::client_ip, req.target(), req.method()), "request received"sv);
 
     }
     
