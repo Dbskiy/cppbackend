@@ -1,9 +1,4 @@
-/*#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/json.hpp>
-#include <boost/date_time.hpp>*/ //если оставить только logger.h, тоже будет работать
-//#define BOOST_BEAST_USE_STD_STRING_VIEW
-#include "logger.h" //надо указать #define BOOST_BEAST_USE_STD_STRING_VIEW либо здесь, либо в logger.h
+#include "logger.h"
 
 #include "sdk.h"
 #include <boost/asio/signal_set.hpp>
@@ -53,7 +48,6 @@ int main(int argc, const char* argv[]) {
         net::signal_set signals(ioc, SIGINT, SIGTERM);
         signals.async_wait([&ioc](const sys::error_code& ec, [[maybe_unused]] int signal_number) {
             if (!ec) {
-                //std::cout << "Signal "sv << signal_number << " received"sv << std::endl;
                 ioc.stop();
                 logger::LOG(logger::GetServerStopData(0), "server exited"sv);
             }
@@ -73,11 +67,7 @@ int main(int argc, const char* argv[]) {
             logging_handler(std::forward<decltype(req)>(req), std::forward<decltype(send)>(send)); //присобачить сюда LoggerHandler
         });
         
-	    //std::cout << "Hello! Server is starting at port " << port << std::endl;
-        // Эта надпись сообщает тестам о том, что сервер запущен и готов обрабатывать запросы
        
-        //std::cout << "Server has started..."sv << std::endl;
-
         logger::LOG(logger::GetServerStartData(port, address.to_string()), "server has started"sv);
 
         // 6. Запускаем обработку асинхронных операций
