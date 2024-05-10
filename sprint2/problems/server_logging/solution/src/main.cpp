@@ -53,14 +53,12 @@ int main(int argc, const char* argv[]) {
         net::signal_set signals(ioc, SIGINT, SIGTERM);
         signals.async_wait([&ioc](const sys::error_code& ec, [[maybe_unused]] int signal_number) {
             if (!ec) {
-                std::cout << "Signal "sv << signal_number << " received"sv << std::endl;
+                //std::cout << "Signal "sv << signal_number << " received"sv << std::endl;
                 ioc.stop();
-                //BOOST_LOG_TRIVIAL(info)
-                //    << logging::add_value(logger::additional_data, logger::GetServerStopData(0))
-                //    << "server exited"sv;
                 logger::LOG(logger::GetServerStopData(0), "server exited"sv);
             }
             });
+
         logger::InitBoostLogFilter(); //объявляем логер
 
         // 4. Создаём обработчик HTTP-запросов и связываем его с моделью игры
@@ -77,11 +75,8 @@ int main(int argc, const char* argv[]) {
         
 	    //std::cout << "Hello! Server is starting at port " << port << std::endl;
         // Эта надпись сообщает тестам о том, что сервер запущен и готов обрабатывать запросы
-        std::cout << "Server has started..."sv << std::endl;
-
-        //BOOST_LOG_TRIVIAL(info)
-        //    << logging::add_value(logger::additional_data, logger::GetServerStartData(port, address.to_string()))
-        //    << "server started"sv;
+       
+        //std::cout << "Server has started..."sv << std::endl;
 
         logger::LOG(logger::GetServerStartData(port, address.to_string()), "server started"sv);
 
@@ -90,10 +85,6 @@ int main(int argc, const char* argv[]) {
             ioc.run();
         });
     } catch (const std::exception& ex) {
-        //std::cerr << ex.what() << std::endl;
-        //BOOST_LOG_TRIVIAL(info)
-        //    << logging::add_value(logger::additional_data, logger::GetServerStopData(EXIT_FAILURE, ex))
-        //    << "server exited"sv;
         logger::LOG(logger::GetServerStopData(EXIT_FAILURE, ex), "server exited"sv);
         return EXIT_FAILURE;
     }

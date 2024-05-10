@@ -21,7 +21,6 @@ namespace http = beast::http;
 namespace fs = std::filesystem;
 
 using namespace std::literals;
-//using namespace std::chrono;
 
 // Ответ, тело которого представлено в виде строки
 using StringResponse = http::response<http::string_body>;
@@ -63,7 +62,6 @@ public:
 
         system_clock::time_point start_ts = system_clock::now();
 
-        //response_body response = decorated_(std::move(req), std::forward<Send>(send));
         decorated_(std::move(req), std::forward<Send>(send));
 
         system_clock::time_point end_ts = system_clock::now();
@@ -110,23 +108,20 @@ public:
 
         if (req.target().substr(0, 5) == "/api/") {
             StringResponse ApiResponse = MakeApiResponse(req.target(), req.version());
-            //std::cout << "ApiResponse c_t = " << ApiResponse.find(http::field::content_type)->value() << std::endl;
             res_content_type_ = ApiResponse.find(http::field::content_type)->value();
             res_code_ = ApiResponse.result_int();
-            send(ApiResponse); // попробуй std::move
+            send(ApiResponse);
         }
         else {
             response_body response = MakeStaticFileResponse(req.target(), content_root_path_, req.version());
             if (std::holds_alternative<FileResponse>(response)) {
                 FileResponse& f_res = std::get<FileResponse>(response);
-                //std::cout << "f_res in req_handler c_t = " << f_res.find(http::field::content_type)->value() << std::endl;
                 res_content_type_ = f_res.find(http::field::content_type)->value();
                 res_code_ = f_res.result_int();
                 send(f_res);
             } 
             else if (std::holds_alternative<StringResponse>(response)) {
                 StringResponse& s_res = std::get<StringResponse>(response);
-                //std::cout << "s_res in req_handler c_t = " << s_res.find(http::field::content_type)->value() << std::endl;
                 res_content_type_ = s_res.find(http::field::content_type)->value();
                 res_code_ = s_res.result_int();
                 send(s_res);

@@ -17,8 +17,6 @@ namespace http_handler {
         using namespace http;
         file_body::value_type file;
         if (sys::error_code ec; file.open(static_file_path.string().c_str(), beast::file_mode::read, ec), ec) {
-            std::cout << "Failed to open file "sv << static_file_path.string() << std::endl;
-
             throw ec.what();
         }
 
