@@ -68,14 +68,6 @@ namespace http_handler {
 
     }
 
-    std::string_view RequestHandler::getResponseContentType() {
-        return res_content_type_;
-    }
-
-    int RequestHandler::getResponseCode() {
-        return res_code_;
-    }
-
     std::string_view RequestHandler::MapsResponse(std::string& response_body)
 	{
 		json::array maps; 

@@ -36,7 +36,7 @@ namespace logger
     
     json::object GetServerStartData(const net::ip::port_type port, const std::string& host_ip);
 
-    //перегрузка функции
+    //РїРµСЂРµРіСЂСѓР·РєР° С„СѓРЅРєС†РёРё
     json::object GetServerStopData(const int& code);
     json::object GetServerStopData(const int& code, const std::exception& ex);
     
@@ -48,4 +48,6 @@ namespace logger
     void LOG(const json::object& data, const std::string_view message);
 
     static std::string client_ip;
+    static std::string_view res_content_type;
+    static int res_code;
 }

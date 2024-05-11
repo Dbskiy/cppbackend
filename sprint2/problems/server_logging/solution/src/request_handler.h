@@ -11,6 +11,7 @@
 #include "static_content.h"
 #include <unordered_map>
 #include <variant>
+//#include <chrono>
 #include "logger.h"
 
 namespace http_handler {
@@ -67,7 +68,7 @@ public:
 
         auto duration = duration_cast<milliseconds>(end_ts - start_ts);
 
-        LogResponse(decorated_.getResponseCode(), decorated_.getResponseContentType(), duration);
+        LogResponse(duration);
     }
 
 private:
@@ -78,8 +79,8 @@ private:
 
     }
     
-    static void LogResponse(const int& code, const std::string_view content_type, const milliseconds& duration) {
-        logger::LOG(logger::GetResData(duration, code, content_type), "response sent"sv);
+    static void LogResponse(const milliseconds& duration) {
+        logger::LOG(logger::GetResData(duration, logger::res_code, logger::res_content_type), "response sent"sv);
     }
 
     SomeRequestHandler& decorated_;
@@ -107,32 +108,27 @@ public:
 
         if (req.target().substr(0, 5) == "/api/") {
             StringResponse ApiResponse = MakeApiResponse(req.target(), req.version());
-            res_content_type_ = ApiResponse.find(http::field::content_type)->value();
-            res_code_ = ApiResponse.result_int();
+
+            logger::res_code = ApiResponse.result_int();
+            logger::res_content_type = ApiResponse.find(http::field::content_type)->value();
             send(ApiResponse);
         }
         else {
             response_body response = MakeStaticFileResponse(req.target(), content_root_path_, req.version());
             if (std::holds_alternative<FileResponse>(response)) {
                 FileResponse& f_res = std::get<FileResponse>(response);
-                res_content_type_ = f_res.find(http::field::content_type)->value();
-                res_code_ = f_res.result_int();
+                logger::res_code = f_res.result_int();
+                logger::res_content_type = f_res.find(http::field::content_type)->value();
                 send(f_res);
             } 
             else if (std::holds_alternative<StringResponse>(response)) {
                 StringResponse& s_res = std::get<StringResponse>(response);
-                res_content_type_ = s_res.find(http::field::content_type)->value();
-                res_code_ = s_res.result_int();
+                logger::res_code = s_res.result_int();
+                logger::res_content_type = s_res.find(http::field::content_type)->value();
                 send(s_res);
             }
         }
     }
-
-    //для логирования
-    std::string_view getResponseContentType();
-    int getResponseCode();
-
-
 
 private:
 
@@ -159,9 +155,6 @@ private:
     model::Game& game_;
 
     fs::path content_root_path_;
-
-    std::string_view res_content_type_ = "";
-    int res_code_ = 0;
 };
 
 }  // namespace http_handler
