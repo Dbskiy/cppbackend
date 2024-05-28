@@ -99,8 +99,8 @@ namespace logger
 
 
 		logging::add_console_log(
-			std::clog,
-			logging::keywords::format = &logger::MyFormatter,
+			std::cout,
+			logging::keywords::format = &MyFormatter,
 			logging::keywords::auto_flush = true
 		);
 	}
