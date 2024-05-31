@@ -139,11 +139,17 @@ private:
         }
         else {
             json::error_code ec;
+
             auto json_body = json::parse(req.body(), ec);
 
             //ошибка при парсинге json или при получении его свойств
             if (ec || !json_body.as_object().contains("userName") || !json_body.as_object().contains("mapId")) {
                 return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Join game request parse error"), http_version, content_type);
+            }
+
+            if (json_body.at("userName").as_string().empty()) {
+                //реализовать получение имени игрока
+                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid name"), http_version, content_type);
             }
 
             model::Map::Id map_id(json_body.at("mapId").as_string().c_str());
@@ -153,26 +159,19 @@ private:
             }
 
 
-            if (json_body.at("userName").as_string().empty()) {
-                //реализовать получение имени игрока
-                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid name"), http_version, content_type);
-            }
+            Dog::DogName user_name(json_body.at("userName").as_string().c_str());
 
             StringResponse correctResponse;
 
-            Dog::DogName user_name(json_body.at("userName").as_string().c_str());
-
             auto [dog, session] = game_.AddDogToSession(map_id, user_name);
-
-
 
             auto [player, token] = players_.AddPlayer(dog, session);
 
             json::object join_res_body;
 
-            join_res_body["authtoken"] = *token;
+            join_res_body["authToken"] = *token;
 
-            join_res_body["PlayerId"] = *dog->GetDogId();
+            join_res_body["playerId"] = *dog->GetDogId();
 
             correctResponse = MakeStringResponse(http::status::ok, json::serialize(join_res_body), http_version, content_type);
             return correctResponse;
@@ -228,10 +227,9 @@ private:
 
     }
 
+    std::string MapsResponse();
 
-    std::string_view MapsResponse();
-
-    std::string_view MapById(const std::string&, model::Map::Id);
+    std::string MapById(const std::string&, model::Map::Id);
 
     std::string ErrorResponse(const std::string&, const std::string&);
 
@@ -339,26 +337,6 @@ public:
             //do smth
         }
     }
-
-
-                /*if (std::holds_alternative<FileResponse>(response)) {
-                    FileResponse& f_res = std::get<FileResponse>(response);
-                    logger::res_code = f_res.result_int();
-                    logger::res_content_type = f_res.find(http::field::content_type)->value();
-                    send(f_res);
-                } 
-                else if (std::holds_alternative<StringResponse>(response)) {
-                    StringResponse& s_res = std::get<StringResponse>(response);
-                    logger::res_code = s_res.result_int();
-                    logger::res_content_type = s_res.find(http::field::content_type)->value();
-                    send(s_res);
-                }
-
-                return 
-            }
-        }
-
-    }*/
 
 private:
 

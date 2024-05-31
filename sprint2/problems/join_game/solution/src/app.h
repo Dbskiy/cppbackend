@@ -1,4 +1,5 @@
 #pragma once
+#include <iomanip>
 #include <random>
 #include <string>
 #include <sstream>
@@ -59,7 +60,9 @@ namespace app {
             auto number2 = generator2_();
 
             std::stringstream ss;
-            ss << std::hex << number1 << number2;
+            ss << std::hex << std::setw(16) << std::setfill('0') << number1;
+            ss << std::hex << std::setw(16) << std::setfill('0') << number2;
+
             return Token(ss.str());
         }
 

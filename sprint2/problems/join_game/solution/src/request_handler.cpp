@@ -68,7 +68,7 @@ namespace http_handler {
 
     }
 
-    std::string_view ApiHandler::MapsResponse()
+    std::string ApiHandler::MapsResponse()
 	{
 		json::array maps; 
 
@@ -85,10 +85,10 @@ namespace http_handler {
 
 		std::string response_body = json::serialize(maps);
 
-		return std::string_view(response_body.data(), response_body.size());
+		return response_body;
 	}
 
-	std::string_view ApiHandler::MapById(const std::string& map_id, model::Map::Id id)
+	std::string ApiHandler::MapById(const std::string& map_id, model::Map::Id id)
 	{
         const model::Map* this_map = game_.FindMap(id);
 
@@ -109,7 +109,7 @@ namespace http_handler {
 
         std::string response_body = json::serialize(map);
 
-        return std::string_view(response_body.data(), response_body.size());
+        return response_body;
 	}
 
     std::string ApiHandler::ErrorResponse(const std::string& code, const std::string& message)

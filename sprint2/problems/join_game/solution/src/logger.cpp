@@ -28,7 +28,7 @@ namespace logger
 		data["response_time"] = response_time.count();
 		data["code"] = code;
 		if (content_type == "") {
-			data["content_type"] = NULL;
+			data["content_type"] = 0;
 		}
 		else {
 			data["content_type"] = std::string(content_type.data(), content_type.size());
