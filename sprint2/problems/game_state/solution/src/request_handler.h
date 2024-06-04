@@ -102,18 +102,16 @@ public:
         }
         else if (sub_path == "/api/v1/game"sv) {
 
-            //парсим json 
-
             std::string_view content_type = req.find(http::field::content_type)->value();
 
             if (config_file_path.find("join") != std::string::npos) {
-                    response = JoinGame(req, content_type, http_version);
+                response = JoinGame(req, content_type, http_version);
             }
             else if (config_file_path.find("players") != std::string::npos) {
                 response = GetPlayers(req, content_type, http_version);
             }
-            else {
-                //Если ни тот, ни другой не найден
+            else if (config_file_path.find("state") != std::string::npos) {
+                response = GetState(req, content_type, http_version);
             }
 
             response.set(http::field::cache_control, "no-cache"sv);
@@ -132,9 +130,9 @@ private:
     template <typename Body, typename Allocator>
     StringResponse JoinGame(const http::request<Body, http::basic_fields<Allocator>>& req, const std::string_view content_type, const unsigned http_version) {
         if (req.method() != http::verb::post) {
-            StringResponse invalidMethod = MakeStringResponse(http::status::method_not_allowed, ErrorResponse("invalidMethod", "Only POST method is expected"),
+            StringResponse invalidMethod = MakeStringResponse(http::status::method_not_allowed, ErrorResponse("invalidMethod", "Invalid method"),
                 http_version, content_type);
-            invalidMethod.set(http::field::allow, "POST"sv);
+            invalidMethod.set(http::field::allow, Allow::ALLOW_POST);
             return invalidMethod;
         }
         else {
@@ -144,37 +142,33 @@ private:
 
             //ошибка при парсинге json или при получении его свойств
             if (ec || !json_body.as_object().contains("userName") || !json_body.as_object().contains("mapId")) {
-                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Join game request parse error"), http_version, content_type);
+                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Join game request parse error"), 
+                    http_version, content_type);
             }
 
-            if (json_body.at("userName").as_string().empty()) {
-                //реализовать получение имени игрока
-                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid name"), http_version, content_type);
+            try {
+                std::string user_name = json_body.at("userName").as_string().c_str();
+                std::string map_id = json_body.at("mapId").as_string().c_str();
+
+                json::object join_res_body;
+
+                auto [token, playerId] = app::Application{ game_, players_ }.JoinGame(map_id, user_name);
+
+                join_res_body["authToken"] = *token;
+
+                join_res_body["playerId"] = *playerId;
+
+                return MakeStringResponse(http::status::ok, json::serialize(join_res_body), http_version, content_type);
+
             }
-
-            model::Map::Id map_id(json_body.at("mapId").as_string().c_str());
-
-            if (game_.FindMap(map_id) == nullptr) { //карты не существует
-                return MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map Not Found"), http_version, content_type);
+            catch (const app::JoinGameError& e) {
+                if (e.GetReason() == app::JoinGameErrorReason::InvalidName) {
+                    return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid name"), http_version, content_type);
+                }
+                else if (e.GetReason() == app::JoinGameErrorReason::InvalidMap) {
+                    return MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map Not Found"), http_version, content_type);
+                }
             }
-
-
-            Dog::DogName user_name(json_body.at("userName").as_string().c_str());
-
-            StringResponse correctResponse;
-
-            auto [dog, session] = game_.AddDogToSession(map_id, user_name);
-
-            auto [player, token] = players_.AddPlayer(dog, session);
-
-            json::object join_res_body;
-
-            join_res_body["authToken"] = *token;
-
-            join_res_body["playerId"] = *dog->GetDogId();
-
-            correctResponse = MakeStringResponse(http::status::ok, json::serialize(join_res_body), http_version, content_type);
-            return correctResponse;
         }
     }
 
@@ -184,48 +178,90 @@ private:
         if (req.method() != http::verb::get && req.method() != http::verb::head) {
             StringResponse invalidMethod = MakeStringResponse(http::status::method_not_allowed, ErrorResponse("invalidMethod", "Invalid method"),
                 http_version, content_type);
-            invalidMethod.set(http::field::allow, "GET, HEAD"sv);
+            invalidMethod.set(http::field::allow, Allow::ALLOW_GET_HEAD);
             return invalidMethod;
         }
         
+        try {
+            auto authHeader = req.find(http::field::authorization)->value();
+            auto list_players = app::Application{ game_, players_ }.GetPlayersList(authHeader);
 
-        auto authHeader = req.find(http::field::authorization);
-        //если пусто или токен не соответствует формату
-        if (authHeader == req.end() || authHeader->value().size() != 39) { //"Bearer" + " " + token 
-            return MakeStringResponse(http::status::unauthorized, ErrorResponse("invalidToken", "Authorization header is missing"),
-                http_version, content_type);
+            json::object res_body;
+
+            for (const auto& pair : list_players.list_players_) {
+                json::object name_body;
+
+                name_body["name"] = pair.second;
+
+                res_body[std::to_string(pair.first)] = name_body;
+            }
+
+            return MakeStringResponse(http::status::ok, json::serialize(res_body), http_version, content_type);
+
         }
-
-        //токен
-        std::string player_token = std::string(authHeader->value().substr(7));
-
-        //нахождение игрока по токену
-        std::shared_ptr<app::Player> cur_player = players_.FindByToken(app::Token(player_token));
-
-        //если пользователя нет
-        if (cur_player == nullptr) {
-            return MakeStringResponse(http::status::unauthorized, ErrorResponse("unknownToken", "Player token has not been found"), http_version, content_type);
+        catch (const app::ListPlayersError& e) {
+            if (e.GetReason() == app::ListPlayersErrorReason::InvalidHeader) {
+                return MakeStringResponse(http::status::unauthorized, ErrorResponse("invalidToken", "Authorization header is missing"),
+                    http_version, content_type);
+            }
+            else if (e.GetReason() == app::ListPlayersErrorReason::TokenNotFound) {
+                return MakeStringResponse(http::status::unauthorized, ErrorResponse("unknownToken", "Player token has not been found"), 
+                    http_version, content_type);
+            }
         }
-
-        //тело ответа
-        json::object players_res_body; 
-
-        //получение списка персонажей в игровой сессии
-        auto& dogs = cur_player->session_->GetDogs();
-
-        //итерация по каждому персонажу
-        for (auto& dog : dogs) {
-            json::object res_field;
-            std::string name = *dog.GetDogName();
-            res_field["name"] = name;
-
-            std::uint64_t id = *dog.GetDogId();
-            players_res_body[std::to_string(id)] = res_field;
-        }
-
-        return MakeStringResponse(http::status::ok, json::serialize(players_res_body), http_version, content_type);
-
+       
     }
+
+    template <typename Body, typename Allocator>
+    StringResponse GetState(const http::request<Body, http::basic_fields<Allocator>>& req, const std::string_view content_type, const unsigned http_version) {
+        if (req.method() != http::verb::get && req.method() != http::verb::head) {
+            StringResponse invalidMethod = MakeStringResponse(http::status::method_not_allowed, ErrorResponse("invalidMethod", "Invalid method"),
+                http_version, content_type);
+            invalidMethod.set(http::field::allow, Allow::ALLOW_GET_HEAD);
+            return invalidMethod;
+        }
+
+        try {
+            auto authHeader = req.find(http::field::authorization)->value();
+            auto players_state = app::Application{ game_, players_ }.GetGameState(authHeader);
+
+            json::object res_body;
+            json::object players_json;
+
+            for (const auto& pair : players_state.GetPlayersState()) {
+
+                json::object stats;
+                json::array position;
+                position.push_back(pair.second.position[0]);
+                position.push_back(pair.second.position[1]);
+
+                json::array speed;
+                speed.push_back(pair.second.speed[0]);
+                speed.push_back(pair.second.speed[1]);
+
+                stats["pos"] = position;
+                stats["speed"] = speed;
+                stats["dir"] = pair.second.direction;
+
+                players_json[std::to_string(pair.first)] = stats;
+            }
+            res_body["players"] = players_json;
+
+            return MakeStringResponse(http::status::ok, json::serialize(res_body), http_version, content_type);
+        }
+        catch (const app::GameStateError& e) {
+            if (e.GetReason() == app::GameStateErrorReason::InvalidHeader) {
+                return MakeStringResponse(http::status::unauthorized, ErrorResponse("invalidToken", "Authorization header is missing"),
+                    http_version, content_type);
+            }
+            else if (e.GetReason() == app::GameStateErrorReason::TokenNotFound) {
+                return MakeStringResponse(http::status::unauthorized, ErrorResponse("unknownToken", "Player token has not been found"),
+                    http_version, content_type);
+            }
+        }
+    }
+
+
 
     std::string MapsResponse();
 

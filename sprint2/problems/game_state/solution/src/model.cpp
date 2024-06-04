@@ -35,25 +35,27 @@ void Game::AddMap(Map map) {
     }
 }
 
-Game::PairDogAndSession Game::AddDogToSession(const Map::Id& map_id, const Dog::DogName user_name)
+//нахождение нужной сессии без добавления собаки
+std::shared_ptr<GameSession> Game::FindSession(Map::Id map_id)
 {
     for (auto& session : sessions_) {
-        if (session->GetMap()->GetId() == map_id && session->GetDogs().size() < 10) {
-            session->AddDog(user_name);
-            return {std::make_shared<Dog>(session->GetDogs().back()), session};
+        if (session->GetMap()->GetId() == map_id && session->GetDogs().size() - 1 < 10) {
+            return session;
         }
     }
+
     const Map* map = FindMap(map_id);
     if (map) {
         auto new_session = std::make_shared<GameSession>(const_cast<Map*>(map));
-        new_session->AddDog(user_name);
         AddGameSession(new_session);
-        return { std::make_shared<Dog>(new_session->GetDogs().back()), new_session };
+        return new_session;
     }
-    else {
-        throw std::invalid_argument("Map with id "s + *map_id + " does not exist"s);
-    }
+
+    return nullptr;
+
 }
+
+
 
 void Game::AddGameSession(std::shared_ptr<GameSession> game_session)
 {

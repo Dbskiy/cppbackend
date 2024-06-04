@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <ctime>
+#include <random>
 
 #include "tagged.h"
 
@@ -173,9 +175,13 @@ public:
     ////информация о собаке: имя и id
     using DogId = util::Tagged<std::uint64_t, Dog>;
     using DogName = util::Tagged<std::string, Dog>;
+    using SpawnPoint = util::Tagged<std::vector<double>, Dog>;
     ////id - ключ 
 
-    explicit Dog(std::uint64_t dog_id, DogName name) : dog_id_(Dog::DogId(dog_id)), name_(name) {};
+    explicit Dog(std::uint64_t dog_id, DogName name, std::vector<double>& spawn_point)
+        : dog_id_(Dog::DogId(dog_id)), 
+        name_(name),
+        spawn_point_(spawn_point) {};
 
     DogId GetDogId() const noexcept {
         return dog_id_;
@@ -185,25 +191,32 @@ public:
         return name_;
     }
 
+    std::vector<double> GetSpawnPoint() const noexcept{
+        return spawn_point_;
+    }
+
 private:
     DogId dog_id_;
     DogName name_;
+    std::vector<double> spawn_point_;
 };
 
 class GameSession {
 public:
-    using Dogs = std::vector<Dog>;
+    using Dogs = std::vector<std::shared_ptr<Dog>>;
 
-    explicit GameSession(Map* map) : map_(map), next_dog_id(0) {};
+    explicit GameSession(Map* map) : map_(map) {};
 
     const Dogs& GetDogs() const noexcept {
         return dogs_;
     }
 
-    void AddDog(Dog::DogName user_name) {
+    std::shared_ptr<Dog> AddDog(Dog::DogName user_name) {
+        auto spawn_point = GenerateSpawn();
 
-        Dog new_dog(next_dog_id++, user_name);
-        dogs_.emplace_back(std::move(new_dog));
+        auto new_dog = std::make_shared<Dog>(dogs_.size(), user_name, spawn_point);
+        dogs_.emplace_back(new_dog);
+        return new_dog;
 
     }
 
@@ -211,12 +224,32 @@ public:
         return map_;
     }
 
-
-
 private:
     Dogs dogs_;
     Map* map_;
-    std::uint64_t next_dog_id;
+
+    std::vector<double> GenerateSpawn() {
+
+        //auto& roads = map_->GetRoads();
+        //
+        //auto road_num = rand() % (roads.size());
+
+        //auto& road = roads[road_num];
+
+/*
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> distrib_x(road.GetStart().x, road.GetEnd().x);
+        std::uniform_real_distribution<float> distrib_y(road.GetStart().y, road.GetEnd().y)*/;
+        double x = 0.0;
+        double  y = 0.0;
+
+
+        std::vector<double> points;
+        points.push_back(x);
+        points.push_back(y);
+        return points;
+    }
 
 };
 
@@ -238,7 +271,7 @@ public:
         return nullptr;
     }
 
-    Game::PairDogAndSession AddDogToSession(const Map::Id& map_id, const Dog::DogName user_name);
+    std::shared_ptr<GameSession> FindSession(Map::Id map_id);
 
 private:
     using MapIdHasher = util::TaggedHasher<Map::Id>;
