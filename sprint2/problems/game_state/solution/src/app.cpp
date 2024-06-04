@@ -126,7 +126,7 @@ namespace app {
 			
 		}
 		else {
-			throw ListPlayersError{ ListPlayersErrorReason::InvalidHeader };
+			throw GameStateError{ GameStateErrorReason::InvalidHeader };
 		}
 	}
 
