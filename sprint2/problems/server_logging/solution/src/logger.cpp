@@ -100,7 +100,11 @@ namespace logger
 
 		logging::add_console_log(
 			std::cout,
+<<<<<<< HEAD
 			logging::keywords::format = &logger::MyFormatter,
+=======
+			logging::keywords::format = &MyFormatter,
+>>>>>>> game_state
 			logging::keywords::auto_flush = true
 		);
 	}
