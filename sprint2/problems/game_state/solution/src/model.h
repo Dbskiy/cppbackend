@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
-#include <ctime>
 #include <random>
 
 #include "tagged.h"
@@ -67,6 +66,29 @@ public:
 
     Point GetEnd() const noexcept {
         return end_;
+    }
+
+    std::tuple<double, double> GetRandomPoint() const {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        Coord min_x, min_y, max_x, max_y;
+
+        if (IsHorizontal()) {
+            min_x = std::min(start_.x, end_.x);
+            max_x = std::max(start_.x, end_.x);
+            min_y = max_y = start_.y;
+        } 
+        else {
+            min_y = std::min(start_.y, end_.y);
+            max_y = std::max(start_.y, end_.y);
+            min_x = max_x = start_.x;
+        }
+
+        std::uniform_real_distribution<double> dis_x(min_x, max_x);
+        std::uniform_real_distribution<double> dis_y(min_y, max_y);
+
+        return std::make_tuple(dis_x(gen), dis_y(gen));
     }
 
 private:
@@ -230,20 +252,16 @@ private:
 
     std::vector<double> GenerateSpawn() {
 
-        //auto& roads = map_->GetRoads();
-        //
-        //auto road_num = rand() % (roads.size());
-
-        //auto& road = roads[road_num];
-
-/*
+        auto& roads = map_->GetRoads();
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> distrib_x(road.GetStart().x, road.GetEnd().x);
-        std::uniform_real_distribution<float> distrib_y(road.GetStart().y, road.GetEnd().y)*/;
-        double x = 0.0;
-        double  y = 0.0;
+        std::uniform_int_distribution<> dis_road(0, roads.size() - 1);
 
+        int random_road_index = dis_road(gen);
+
+        auto& road = roads[random_road_index];
+
+        auto [x, y] = road.GetRandomPoint();
 
         std::vector<double> points;
         points.push_back(x);
