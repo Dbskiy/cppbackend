@@ -95,9 +95,8 @@ namespace app {
 			for (auto& dog : dogs) {
 
 				auto& state = dog->GetDogState();
-				Dog::DogState temp_state;
 
-				state.position = dog->GetSpawnPoint();
+				//state.position = dog->GetSpawnPoint();
 
 				auto id = *dog->GetDogId();
 				players_state[id] = state;
@@ -105,6 +104,54 @@ namespace app {
 
 			return { players_state };
 			
+	}
+
+	int GameTime::game_time = 0;
+
+	void PlayerActionUseCase::GetCorrectCoordinates(const Map* map, Dog::DogState& state)
+	{
+		//int time = GameTime{}.game_time;
+		double pos_x = state.position.x + state.speed.Vx * static_cast<double>(GameTime::game_time) / 1000;
+
+		double pos_y = state.position.y + state.speed.Vy * static_cast<double>(GameTime::game_time) / 1000;
+
+		auto available_roads = map->FindRoadsAt(state.position.x, state.position.y);
+
+		for (const auto& road : available_roads) {
+			if (road.IsHorizontal()) {
+				double road_min_x = std::min(road.GetStart().x, road.GetEnd().x);
+				double road_max_x = std::max(road.GetStart().x, road.GetEnd().x);
+				double road_y = road.GetStart().y;
+
+				if (pos_y < road_y - 0.4 || pos_y > road_y + 0.4) {
+					pos_y = std::clamp(pos_y, road_y - 0.4, road_y + 0.4);
+				}
+				if (pos_x < road_min_x) {
+					pos_x = road_min_x;
+				}
+				else if (pos_x > road_max_x) {
+					pos_x = road_max_x;
+				}
+			}
+			else {
+				double road_min_y = std::min(road.GetStart().y, road.GetEnd().y);
+				double road_max_y = std::max(road.GetStart().y, road.GetEnd().y);
+				double road_x = road.GetStart().x;
+
+				if (pos_x < road_x - 0.4 || pos_x > road_x + 0.4) {
+					pos_x = std::clamp(pos_x, road_x - 0.4, road_x + 0.4);
+				}
+				if (pos_y < road_min_y) {
+					pos_y = road_min_y;
+				}
+				else if (pos_y > road_max_y) {
+					pos_y = road_max_y;
+				}
+			}
+		}
+
+		state.position.x = pos_x;
+		state.position.y = pos_y;
 	}
 
 	std::optional<std::string_view> PlayerActionUseCase::MovePlayer(const Token& token, const std::string& move)
@@ -121,9 +168,14 @@ namespace app {
 
 		auto& [x, y] = it->second;
 
-		cur_player->dog_->GetDogState().direction = move;
-		cur_player->dog_->GetDogState().speed.Vx = x;
-		cur_player->dog_->GetDogState().speed.Vy = y;
+		auto& state = cur_player->dog_->GetDogState();	
+
+		state.direction = move;
+
+		state.speed.Vx = x;
+		state.speed.Vy = y;
+
+		GetCorrectCoordinates(cur_player->session_->GetMap(), state);
 
 		return "{}"sv;
 	}

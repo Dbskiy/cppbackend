@@ -213,16 +213,23 @@ namespace app {
 
     };
 
+    struct GameTime {
+        static int game_time;
+    };
+
     class PlayerActionUseCase {
     public:
         PlayerActionUseCase(Players& players)
         : players_(players) {}
+
+        void GetCorrectCoordinates(const Map* map, Dog::DogState& state);
 
         std::optional<std::string_view> MovePlayer(const Token&, const std::string&);
 
     private:
         Players& players_;
     };
+
 
     class Application {
     public:
@@ -237,6 +244,10 @@ namespace app {
         std::optional<GameStateResult> GetGameState(const Token& token);
 
         std::optional<std::string_view> MovePlayer(const Token& token, const std::string& move);
+
+        void SetGameTime(int time) {
+            GameTime::game_time = time;
+        }
 
     private:
         Game& game_;

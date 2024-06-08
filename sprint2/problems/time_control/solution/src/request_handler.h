@@ -142,6 +142,9 @@ public:
                     response = PlayerAction(req, content_type);
                 }
             }
+            else if (config_file_path.find("tick") != std::string::npos) {
+                response = TimeControl(req, content_type);
+            }
 
             response.set(http::field::cache_control, "no-cache"sv);
         }
@@ -188,6 +191,7 @@ private:
 
     StringResponse GetState(const StringRequest&, const std::string_view);
 
+    StringResponse TimeControl(const StringRequest&, const std::string_view);
 
 };
 

@@ -360,6 +360,22 @@ namespace http_handler {
             }, req, content_type);
     }
 
+    StringResponse ApiHandler::TimeControl(const StringRequest& req, const std::string_view content_type)
+    {
+        json::error_code ec;
+
+        auto json_body = json::parse(req.body(), ec);
+
+        if (ec || !json_body.as_object().contains("timeDelta")) {
+            return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
+                req.version(), content_type);
+        }
+
+        app::Application{ game_, players_ }.SetGameTime(json_body.as_object().at("timeDelta").as_int64());
+
+        return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
+    }
+
     response_body RequestHandler::MakeStaticFileResponse(const std::string_view static_file_path, const fs::path& root_path, const unsigned http_version)
     {
         using namespace http;

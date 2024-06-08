@@ -95,10 +95,11 @@ public:
             min_x = max_x = start_.x;
         }
 
-        std::uniform_real_distribution<double> dis_x(min_x, max_x);
-        std::uniform_real_distribution<double> dis_y(min_y, max_y);
+        //std::uniform_real_distribution<double> dis_x(min_x, max_x);
+        //std::uniform_real_distribution<double> dis_y(min_y, max_y);
 
-        return std::make_tuple(dis_x(gen), dis_y(gen));
+        //return std::make_tuple(dis_x(gen), dis_y(gen));
+        return std::make_tuple(min_x, min_y);
     }
 
 private:
@@ -189,6 +190,36 @@ public:
 
     void AddRoad(const Road& road) {
         roads_.emplace_back(road);
+        if (road.IsHorizontal()) {
+            horizontal_roads_[road.GetStart().y].push_back(road);
+        }
+        else {
+            vertical_roads_[road.GetStart().x].push_back(road);
+        }
+    }
+
+    std::vector<Road> FindRoadsAt(double x, double y) const {
+        std::vector<Road> result;
+
+        auto it = horizontal_roads_.find(y);
+        if (it != horizontal_roads_.end()) {
+            for (const auto& road : it->second) {
+                if (road.GetStart().x <= x && road.GetEnd().x >= x) {
+                    result.push_back(road);
+                }
+            }
+        }
+
+        auto it2 = vertical_roads_.find(x);
+        if (it2 != vertical_roads_.end()) {
+            for (const auto& road : it2->second) {
+                if (road.GetStart().y <= y && road.GetEnd().y >= y) {
+                    result.push_back(road);
+                }
+            }
+        }
+
+        return result;
     }
 
     void AddBuilding(const Building& building) {
@@ -204,6 +235,8 @@ private:
     std::string name_;
     DogSpeed speed_;
     Roads roads_;
+    std::unordered_map<double, std::vector<Road>> horizontal_roads_;
+    std::unordered_map<double, std::vector<Road>> vertical_roads_;
     Buildings buildings_;
 
     OfficeIdToIndex warehouse_id_to_index_;
@@ -220,7 +253,10 @@ public:
     explicit Dog(std::uint64_t dog_id, DogName name, Position& spawn_point)
         : dog_id_(Dog::DogId(dog_id)), 
         name_(name),
-        spawn_point_(spawn_point) {};
+        spawn_point_(spawn_point),
+        state_{} {
+        state_.position = spawn_point;
+    };
 
     struct DogState {
         Position position;
@@ -289,7 +325,8 @@ private:
 
         int random_road_index = dis_road(gen);
 
-        auto& road = roads[random_road_index];
+        //auto& road = roads[random_road_index];
+        auto& road = roads[0];
 
         auto [x, y] = road.GetRandomPoint();
 
