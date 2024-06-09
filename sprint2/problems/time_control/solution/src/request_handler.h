@@ -96,63 +96,7 @@ class ApiHandler
 public:
     explicit ApiHandler(model::Game& game, app::Players& players) : game_{ game }, players_{players} {}
 
-    StringResponse MakeApiResponse(const StringRequest& req) { //cpp
-
-        std::string_view config_file_path = req.target();
-
-        unsigned http_version = req.version();
-
-        std::string_view content_type = DefineContentType(config_file_path);
-
-        std::string_view sub_path = config_file_path.substr(0, 12);
-
-        StringResponse response;
-
-        if (sub_path == "/api/v1/maps"sv) { //переписать с find() - так выглядит как костыль
-            if (config_file_path.size() <= 13) {
-                response = MakeStringResponse(http::status::ok, MapsResponse(), req.version(), content_type);
-            }
-            else {
-                std::string map_id(config_file_path.substr(13));
-                model::Map::Id id(map_id.c_str());
-
-                if (game_.FindMap(id) != nullptr) {
-                    response = MakeStringResponse(http::status::ok, MapById(map_id, id), req.version(), content_type);
-                }
-                else {
-                    response = MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map not found"), req.version(), content_type);
-                }
-            }
-        }
-        else if (sub_path == "/api/v1/game"sv) {
-
-            std::string_view content_type = req.find(http::field::content_type)->value();
-
-            if (config_file_path.find("join") != std::string::npos) {
-                response = JoinGame(req, content_type);
-            }
-            else if (config_file_path.find("players") != std::string::npos) {
-                response = GetPlayers(req, content_type);
-            }
-            else if (config_file_path.find("state") != std::string::npos) {
-                response = GetState(req, content_type);
-            }
-            else if (config_file_path.find("player") != std::string::npos) {
-                if (config_file_path.find("action") != std::string::npos) {
-                    response = PlayerAction(req, content_type);
-                }
-            }
-            else if (config_file_path.find("tick") != std::string::npos) {
-                response = TimeControl(req, content_type);
-            }
-
-            response.set(http::field::cache_control, "no-cache"sv);
-        }
-        else {
-            response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Bad request"), http_version, content_type);
-        }
-        return response;
-    }
+    StringResponse MakeApiResponse(const StringRequest& req);
 
 private:
     model::Game& game_;
@@ -263,8 +207,6 @@ public:
 
                         self->UpdateLogger(ApiResponse.result_int(), ApiResponse.find(http::field::content_type)->value());
 
-                        //logger::res_code = ApiResponse.result_int(); //мб гонка
-                        //logger::res_content_type = ApiResponse.find(http::field::content_type)->value(); //мб гонка
                         return send(ApiResponse);
                     }
                     catch (...) {

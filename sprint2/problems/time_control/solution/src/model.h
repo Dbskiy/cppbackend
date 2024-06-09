@@ -149,106 +149,78 @@ private:
     Offset offset_;
 };
 
-class Map {
-public:
-    using Id = util::Tagged<std::string, Map>;
-    using DogSpeed = util::Tagged<double, Map>;
-    using Roads = std::vector<Road>;
-    using Buildings = std::vector<Building>;
-    using Offices = std::vector<Office>;
+    class Map {
+    public:
+        using Id = util::Tagged<std::string, Map>;
+        using DogSpeed = util::Tagged<double, Map>;
+        using Roads = std::vector<Road>;
+        using Buildings = std::vector<Building>;
+        using Offices = std::vector<Office>;
 
-    Map(Id id, std::string name, DogSpeed speed) noexcept
-        : id_(std::move(id))
-        , name_(std::move(name))
-        , speed_(std::move(speed)) 
-    {
-    }
-
-    const Id& GetId() const noexcept {
-        return id_;
-    }
-
-    const std::string& GetName() const noexcept {
-        return name_;
-    }
-
-    const Buildings& GetBuildings() const noexcept {
-        return buildings_;
-    }
-
-    const Roads& GetRoads() const noexcept {
-        return roads_;
-    }
-
-    const Offices& GetOffices() const noexcept {
-        return offices_;
-    }
-
-    const DogSpeed& GetDogSpeed() const noexcept {
-        return speed_;
-    }
-
-    void AddRoad(const Road& road) {
-        roads_.emplace_back(road);
-        if (road.IsHorizontal()) {
-            horizontal_roads_[road.GetStart().y].push_back(road);
-        }
-        else {
-            vertical_roads_[road.GetStart().x].push_back(road);
-        }
-    }
-
-    std::vector<Road> FindRoadsAt(double x, double y) const {
-        std::vector<Road> result;
-
-        auto it = horizontal_roads_.find(y);
-        if (it != horizontal_roads_.end()) {
-            for (const auto& road : it->second) {
-                if (road.GetStart().x <= x && road.GetEnd().x >= x) {
-                    result.push_back(road);
-                }
-            }
+        Map(Id id, std::string name, DogSpeed speed) noexcept
+            : id_(std::move(id))
+            , name_(std::move(name))
+            , speed_(std::move(speed)) 
+        {
         }
 
-        auto it2 = vertical_roads_.find(x);
-        if (it2 != vertical_roads_.end()) {
-            for (const auto& road : it2->second) {
-                if (road.GetStart().y <= y && road.GetEnd().y >= y) {
-                    result.push_back(road);
-                }
-            }
+        const Id& GetId() const noexcept {
+            return id_;
         }
 
-        return result;
-    }
+        const std::string& GetName() const noexcept {
+            return name_;
+        }
 
-    void AddBuilding(const Building& building) {
-        buildings_.emplace_back(building);
-    }
+        const Buildings& GetBuildings() const noexcept {
+            return buildings_;
+        }
 
-    void AddOffice(Office office);
+        const Roads& GetRoads() const noexcept {
+            return roads_;
+        }
 
-private:
-    using OfficeIdToIndex = std::unordered_map<Office::Id, size_t, util::TaggedHasher<Office::Id>>;
+        const Offices& GetOffices() const noexcept {
+            return offices_;
+        }
 
-    Id id_;
-    std::string name_;
-    DogSpeed speed_;
-    Roads roads_;
-    std::unordered_map<double, std::vector<Road>> horizontal_roads_;
-    std::unordered_map<double, std::vector<Road>> vertical_roads_;
-    Buildings buildings_;
+        const DogSpeed& GetDogSpeed() const noexcept {
+            return speed_;
+        }
 
-    OfficeIdToIndex warehouse_id_to_index_;
-    Offices offices_;
-};
+        void AddRoad(const Road& road) {
+            roads_.emplace_back(road);
+
+        }
+
+        std::vector<Road> FindRoadsAt(double x, double y) const;
+
+
+        void AddBuilding(const Building& building) {
+            buildings_.emplace_back(building);
+        }
+
+        void AddOffice(Office office);
+
+    private:
+        using OfficeIdToIndex = std::unordered_map<Office::Id, size_t, util::TaggedHasher<Office::Id>>;
+
+        Id id_;
+        std::string name_;
+        DogSpeed speed_;
+        Roads roads_;
+        Buildings buildings_;
+
+        OfficeIdToIndex warehouse_id_to_index_;
+        Offices offices_;
+    };
 
 class Dog {
 public:
-    ////ËÌÙÓÏ‡ˆËˇ Ó ÒÓ·‡ÍÂ: ËÏˇ Ë id
+    ////–∏–Ω—Ñ–æ—Ä–º–∞—Ü–∏—è –æ —Å–æ–±–∞–∫–µ: –∏–º—è –∏ id
     using DogId = util::Tagged<std::uint64_t, Dog>;
     using DogName = util::Tagged<std::string, Dog>;
-    ////id - ÍÎ˛˜ 
+    ////id - –∫–ª—é—á 
 
     explicit Dog(std::uint64_t dog_id, DogName name, Position& spawn_point)
         : dog_id_(Dog::DogId(dog_id)), 
@@ -262,6 +234,11 @@ public:
         Position position;
         Speed speed;
         std::string direction = "U";
+
+        void SetDefaultSpeed() {
+            speed.Vx = 0.0;
+            speed.Vy = 0.0;
+        }
 
         //DogState() : position{ {} } {}
     };
@@ -337,17 +314,23 @@ private:
         return pos;
     }
 
+
 };
 
 class Game {
 public:
     using Maps = std::vector<Map>;
+    using Sessions = std::vector<std::shared_ptr<GameSession>>;
     using PairDogAndSession = std::pair<std::shared_ptr<Dog>, std::shared_ptr<GameSession>>;
 
     void AddMap(Map map);
 
     const Maps& GetMaps() const noexcept {
         return maps_;
+    }
+
+    const Sessions& GetSessions() const noexcept {
+        return sessions_;
     }
 
     const Map* FindMap(const Map::Id& id) const noexcept {
@@ -364,10 +347,10 @@ private:
     using MapIdToIndex = std::unordered_map<Map::Id, size_t, MapIdHasher>;
 
     void AddGameSession(std::shared_ptr<GameSession> game_session);
-    std::vector<Map> maps_;
+    Maps maps_;
     MapIdToIndex map_id_to_index_;
 
-    std::vector<std::shared_ptr<GameSession>> sessions_;
+    Sessions sessions_;
 };
 
 }  // namespace model

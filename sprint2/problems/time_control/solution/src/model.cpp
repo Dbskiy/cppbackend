@@ -5,6 +5,33 @@
 namespace model {
 using namespace std::literals;
 
+std::vector<Road> Map::FindRoadsAt(double x, double y) const
+{
+    std::vector<Road> result;
+
+    for (auto& road : GetRoads()) {
+
+        Point start{ 0, 0 };
+        Point end{ 0, 0 };
+        if (road.IsHorizontal()) {
+            start.x = std::min(road.GetStart().x, road.GetEnd().x);
+            end.x = std::max(road.GetStart().x, road.GetEnd().x);
+            start.y = end.y = road.GetStart().y;
+        }
+        else {
+            start.y = std::min(road.GetStart().y, road.GetEnd().y);
+            end.y = std::max(road.GetStart().y, road.GetEnd().y);
+            start.x = end.x = road.GetStart().x;
+        }
+
+        if ((x >= start.x - 0.4) && (x <= end.x + 0.4) && (y >= start.y - 0.4) && (y <= end.y + 0.4)) {
+            result.emplace_back(road);
+        }
+    }
+
+    return result;
+}
+
 void Map::AddOffice(Office office) {
     if (warehouse_id_to_index_.contains(office.GetId())) {
         throw std::invalid_argument("Duplicate warehouse");
@@ -63,3 +90,4 @@ void Game::AddGameSession(std::shared_ptr<GameSession> game_session)
     sessions_.emplace_back(std::move(game_session));
 }
 }  // namespace model
+
