@@ -91,7 +91,7 @@ namespace http_handler {
 
         StringResponse response;
 
-        if (config_file_path.find("/api/v1/maps"sv) != std::string::npos) {
+        if (config_file_path.find("/api/v1/maps") != std::string::npos) { 
             if (config_file_path.size() <= 13) {
                 response = MakeStringResponse(http::status::ok, MapsResponse(), req.version(), content_type);
             }
@@ -107,7 +107,7 @@ namespace http_handler {
                 }
             }
         }
-        else if (config_file_path.find("/api/v1/game"sv) != std::string::npos) {
+        else if (config_file_path.find("/api/v1/game") != std::string::npos) {
 
             std::string_view content_type = req.find(http::field::content_type)->value();
 
@@ -125,7 +125,7 @@ namespace http_handler {
                     response = PlayerAction(req, content_type);
                 }
             }
-            else if (config_file_path.find("tick") != std::string::npos && tick_period_) {
+            else if (config_file_path.find("tick") != std::string::npos) {
                 if (tick_period_ == 0) {
                     response = TimeControl(req, content_type);
                 }
@@ -135,7 +135,6 @@ namespace http_handler {
             }
 
         }
-
         response.set(http::field::cache_control, "no-cache"sv);
         return response;
     }
