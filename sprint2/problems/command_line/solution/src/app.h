@@ -143,7 +143,7 @@ namespace app {
 
 
 
-    class ListPlayersResult //класс для доступа к необходимым полям корректного ответа сервера
+    class ListPlayersResult 
     {
     public:
         ListPlayersResult(const std::unordered_map<std::uint64_t, std::string>& list_players) 
@@ -165,7 +165,7 @@ namespace app {
         Players& players_;
     };
 
-    class GameStateResult //класс для доступа к необходимым полям корректного ответа сервера
+    class GameStateResult 
     {
     public:
         GameStateResult(std::unordered_map<std::uint64_t, Dog::DogState>& players_state) : players_state_(players_state) {}

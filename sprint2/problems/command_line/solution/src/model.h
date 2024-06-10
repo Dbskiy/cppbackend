@@ -233,10 +233,8 @@ private:
 
 class Dog {
 public:
-    ////информация о собаке: имя и id
     using DogId = util::Tagged<std::uint64_t, Dog>;
     using DogName = util::Tagged<std::string, Dog>;
-    ////id - ключ 
 
     explicit Dog(std::uint64_t dog_id, DogName name, Position& spawn_point)
         : dog_id_(Dog::DogId(dog_id)), 
@@ -256,7 +254,6 @@ public:
             speed.Vy = 0.0;
         }
 
-        //DogState() : position{ {} } {}
     };
 
     DogId GetDogId() const noexcept {

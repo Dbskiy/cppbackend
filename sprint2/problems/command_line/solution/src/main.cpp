@@ -34,7 +34,6 @@ void RunWorkers(unsigned num_threads, const Fn& fn) {
 }  // namespace
 
 struct Args {
-    //мб надо сделать optional
     int tick_period = 0;
     std::string config_file;
     std::string static_files_root;
@@ -49,7 +48,6 @@ struct Args {
     Args args{};
 
     desc.add_options()
-        // Добавляем опцию --help и её короткую версию - h
         ("help,h", "Show help")
         ("tick-period,t", po::value(&args.tick_period)->value_name("milliseconds"s), "set tick period")
         ("config-file,c", po::value(&args.config_file)->value_name("file"s), "set config file path")
@@ -60,13 +58,10 @@ struct Args {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-
-    // Выводим описание параметров программы
     std::cout << desc;
 
 
     if (vm.contains("help"s)) {
-        // Если был указан параметр --help, то выводим справку и возвращаем nullopt
         std::cout << desc;
         return std::nullopt;
     }
@@ -149,8 +144,9 @@ int main(int argc, const char* argv[]) {
             // 1. Загружаем карту из файла и построить модель игры
             model::Game game = json_loader::LoadGame(args->config_file);
 
-            // 2. Инициализируем io_context
             const unsigned num_threads = std::thread::hardware_concurrency();
+            
+            // 2. Инициализируем io_context
             net::io_context ioc(num_threads);
 
             // 3. Добавляем асинхронный обработчик сигналов SIGINT и SIGTERM

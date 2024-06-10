@@ -89,11 +89,9 @@ namespace http_handler {
 
         std::string_view content_type = DefineContentType(config_file_path);
 
-        std::string_view sub_path = config_file_path.substr(0, 12);
-
         StringResponse response;
 
-        if (sub_path == "/api/v1/maps"sv) { //переписать с find() - так выглядит как костыль
+        if (config_file_path.find("/api/v1/maps"sv) != std::string::npos) {
             if (config_file_path.size() <= 13) {
                 response = MakeStringResponse(http::status::ok, MapsResponse(), req.version(), content_type);
             }
@@ -109,7 +107,7 @@ namespace http_handler {
                 }
             }
         }
-        else if (sub_path == "/api/v1/game"sv) {
+        else if (config_file_path.find("/api/v1/game"sv) != std::string::npos) {
 
             std::string_view content_type = req.find(http::field::content_type)->value();
 
@@ -137,9 +135,7 @@ namespace http_handler {
             }
 
         }
-        /*else {
-            response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Bad request"), http_version, content_type);
-        }*/
+
         response.set(http::field::cache_control, "no-cache"sv);
         return response;
     }

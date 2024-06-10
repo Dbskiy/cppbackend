@@ -10,7 +10,7 @@ RUN apt update && \
 
 # Запуск conan как раньше
 COPY conanfile.txt /app/
-#RUN mkdir /app/build && cd /app/build && \
+ #RUN mkdir /app/build && cd /app/build && \
     #conan install .. --build=missing
 
 RUN mkdir /app/build && cd /app/build && \

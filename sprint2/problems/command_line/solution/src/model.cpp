@@ -84,7 +84,6 @@ std::shared_ptr<GameSession> Game::FindSession(Map::Id map_id)
 
 void Game::AddGameSession(std::shared_ptr<GameSession> game_session)
 {
-    //здесь просто добавление
     sessions_.emplace_back(std::move(game_session));
 }
 }  // namespace model
