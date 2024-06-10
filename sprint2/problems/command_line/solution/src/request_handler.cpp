@@ -101,7 +101,7 @@ namespace http_handler {
                 std::string map_id(config_file_path.substr(13));
                 model::Map::Id id(map_id.c_str());
 
-                if (game_.FindMap(id) != nullptr) {
+                if (App_.game_.FindMap(id) != nullptr) {
                     response = MakeStringResponse(http::status::ok, MapById(map_id, id), req.version(), content_type);
                 }
                 else {
@@ -127,14 +127,19 @@ namespace http_handler {
                     response = PlayerAction(req, content_type);
                 }
             }
-            else if (config_file_path.find("tick") != std::string::npos) {
-                response = TimeControl(req, content_type);
+            else if (config_file_path.find("tick") != std::string::npos && tick_period_) {
+                if (tick_period_ == 0) {
+                    response = TimeControl(req, content_type);
+                }
+                else {
+                    response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Invalid endpoint"), http_version, content_type);
+                }
             }
 
         }
-        else {
+        /*else {
             response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Bad request"), http_version, content_type);
-        }
+        }*/
         response.set(http::field::cache_control, "no-cache"sv);
         return response;
     }
@@ -143,7 +148,7 @@ namespace http_handler {
 	{
 		json::array maps; 
 
-		std::vector<model::Map> maps_vector = game_.GetMaps(); //все доступные карты 
+		std::vector<model::Map> maps_vector = App_.game_.GetMaps(); //все доступные карты 
 
 		for (const auto& map : maps_vector) {
 			json::object map_properties; //объект, содержащий свойства одной карты
@@ -161,7 +166,7 @@ namespace http_handler {
 
 	std::string ApiHandler::MapById(const std::string& map_id, model::Map::Id id)
 	{
-        const model::Map* this_map = game_.FindMap(id);
+        const model::Map* this_map = App_.game_.FindMap(id);
 
         json::object map;
 
@@ -242,14 +247,17 @@ namespace http_handler {
 
     StringResponse ApiHandler::MakeUnauthorizedError(const unsigned http_version, const std::string_view content_type, app::AuthorizationErrorReason reason)
     {
+        std::string code;
+        std::string message;
         if (reason == app::AuthorizationErrorReason::InvalidHeader) {
-            return MakeStringResponse(http::status::unauthorized, ErrorResponse("invalidToken", "Authorization header is missing"),
-                http_version, content_type);
+            code = "invalidToken";
+            message = "Authorization header is missing";
         }
         else if (reason == app::AuthorizationErrorReason::TokenNotFound) {
-            return MakeStringResponse(http::status::unauthorized, ErrorResponse("unknownToken", "Player token has not been found"),
-                http_version, content_type);
+            code = "unknownToken";
+            message = "Player token has not been found";
         }
+        return MakeStringResponse(http::status::unauthorized, ErrorResponse(code, message), http_version, content_type);
     }
 
     std::optional<app::Token> ApiHandler::TryExtractToken(const StringRequest& req)
@@ -292,7 +300,7 @@ namespace http_handler {
 
                 json::object join_res_body;
 
-                auto [token, playerId] = app::Application{ game_, players_ }.JoinGame(map_id, user_name);
+                auto [token, playerId] = App_.JoinGame(map_id, user_name, randomize_spawn_);
 
                 join_res_body["authToken"] = *token;
 
@@ -319,7 +327,7 @@ namespace http_handler {
                 return *invalid_method;
             }
 
-            auto list_players = app::Application{ game_, players_ }.GetPlayersList(token);
+            auto list_players = App_.GetPlayersList(token);
 
             if (list_players) {
                 json::object res_body;
@@ -368,7 +376,7 @@ namespace http_handler {
                     req.version(), content_type);
             }
 
-            if (auto player_action_res = app::PlayerActionUseCase(players_).MovePlayer(token, move)) {
+            if (auto player_action_res = App_.MovePlayer(token, move)) {
                 return MakeStringResponse(http::status::ok, *player_action_res, req.version(), content_type);
             }
             else {
@@ -387,7 +395,7 @@ namespace http_handler {
                 return *invalid_method;
             }
 
-            auto players_state = app::Application{ game_, players_ }.GetGameState(token);
+            auto players_state = App_.GetGameState(token);
 
             if (players_state) {
                 json::object res_body;
@@ -438,9 +446,9 @@ namespace http_handler {
             return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
                 req.version(), content_type);
         }
-        auto tick = it->value().as_int64();
+        tick_period_ = it->value().as_int64();
 
-        app::Application{ game_, players_ }.Tick(tick);
+        App_.Tick(tick_period_);
 
         return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
     }

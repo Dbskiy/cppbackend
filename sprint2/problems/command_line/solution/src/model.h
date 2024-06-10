@@ -78,6 +78,23 @@ public:
         return end_;
     }
 
+    std::tuple<double, double> GetRoadStartPoint() const {
+        Coord min_x, min_y, max_x, max_y;
+
+        if (IsHorizontal()) {
+            min_x = std::min(start_.x, end_.x);
+            max_x = std::max(start_.x, end_.x);
+            min_y = max_y = start_.y;
+        }
+        else {
+            min_y = std::min(start_.y, end_.y);
+            max_y = std::max(start_.y, end_.y);
+            min_x = max_x = start_.x;
+        }
+
+        return std::make_tuple(min_x, min_y);
+    }
+
     std::tuple<double, double> GetRandomPoint() const {
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -95,11 +112,10 @@ public:
             min_x = max_x = start_.x;
         }
 
-        //std::uniform_real_distribution<double> dis_x(min_x, max_x);
-        //std::uniform_real_distribution<double> dis_y(min_y, max_y);
+        std::uniform_real_distribution<double> dis_x(min_x, max_x);
+        std::uniform_real_distribution<double> dis_y(min_y, max_y);
 
-        //return std::make_tuple(dis_x(gen), dis_y(gen));
-        return std::make_tuple(min_x, min_y);
+        return std::make_tuple(dis_x(gen), dis_y(gen));
     }
 
 private:
@@ -276,8 +292,8 @@ public:
         return dogs_;
     }
 
-    std::shared_ptr<Dog> AddDog(Dog::DogName user_name) {
-        auto spawn_point = GenerateSpawn();
+    std::shared_ptr<Dog> AddDog(Dog::DogName user_name, const bool randomize_spawn) {
+        auto spawn_point = GenerateSpawn(randomize_spawn);
 
         auto new_dog = std::make_shared<Dog>(dogs_.size(), user_name, spawn_point);
         dogs_.emplace_back(new_dog);
@@ -293,23 +309,30 @@ private:
     Dogs dogs_;
     Map* map_;
 
-    Position GenerateSpawn() {
+    Position GenerateSpawn(const bool randomize_spawn) {
 
         auto& roads = map_->GetRoads();
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis_road(0, roads.size() - 1);
-
-        int random_road_index = dis_road(gen);
-
-        //auto& road = roads[random_road_index];
-        auto& road = roads[0];
-
-        auto [x, y] = road.GetRandomPoint();
-
         Position pos;
-        pos.x = x;
-        pos.y = y;
+
+        if (randomize_spawn) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis_road(0, roads.size() - 1);
+
+            int road_index = dis_road(gen);
+            
+            auto& random_road = roads[road_index];
+            auto [x, y] = random_road.GetRandomPoint();
+
+            pos.x = x;
+            pos.y = y;
+        }
+        else {
+            auto& first_road = roads.front();
+            auto [x, y] = first_road.GetRoadStartPoint();
+            pos.x = x;
+            pos.y = y;
+        }
 
         return pos;
     }

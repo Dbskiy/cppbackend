@@ -133,7 +133,7 @@ namespace app {
         : game_(game),
           players_(players) {};
 
-        JoinGameResult Join(const std::string& map_id, const std::string& name);
+        JoinGameResult Join(const std::string& map_id, const std::string& name, const bool randomize_spawn);
 
 
     private:
@@ -239,8 +239,11 @@ namespace app {
         Application(Game& game, Players& players)
         : game_(game),
           players_(players) {};
+        
+        Game& game_;
+        Players& players_;
 
-        JoinGameResult JoinGame(const std::string& map_id, const std::string& name);
+        JoinGameResult JoinGame(const std::string& map_id, const std::string& name, const bool randomize_spawn);
 
         std::optional<ListPlayersResult> GetPlayersList(const Token& token);
 
@@ -251,8 +254,6 @@ namespace app {
         void Tick(int tick);
 
     private:
-        Game& game_;
-        Players& players_;
 
         JoinGameUseCase join_game_{ game_, players_ };
         ListPlayersUseCase list_players_{ game_, players_ };

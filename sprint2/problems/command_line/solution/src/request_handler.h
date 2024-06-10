@@ -51,7 +51,6 @@ struct Allow {
                 invalidMethod.set(http::field::allow, Allow::POST);
                 return invalidMethod;
             }
-            return std::nullopt;
         }
         else if (expected == GET_HEAD) {
             if (method != http::verb::get && method != http::verb::head) {
@@ -60,9 +59,8 @@ struct Allow {
                 invalidMethod.set(http::field::allow, Allow::GET_HEAD);
                 return invalidMethod;
             }
-            return std::nullopt;
         }
-
+        return std::nullopt;
     }
 
 };
@@ -94,14 +92,18 @@ struct ContentType {
 class ApiHandler
 {
 public:
-    explicit ApiHandler(model::Game& game, app::Players& players) : game_{ game }, players_{players} {}
+    explicit ApiHandler(app::Application& App, int tick_period, const bool randomize_spawn) 
+        : tick_period_(tick_period),
+          randomize_spawn_(randomize_spawn),
+          App_{App} {}
 
     StringResponse MakeApiResponse(const StringRequest& req);
 
 private:
-    model::Game& game_;
+    int tick_period_;
+    bool randomize_spawn_;
 
-    app::Players& players_;
+    app::Application App_;
 
     std::string MapsResponse();
 
@@ -180,12 +182,10 @@ class RequestHandler : public std::enable_shared_from_this<RequestHandler> {
 public:
     using Strand = net::strand<net::io_context::executor_type>;
 
-    explicit RequestHandler(Strand api_strand, model::Game& game, const fs::path& content_root_path, app::Players& players) 
+    explicit RequestHandler(Strand api_strand, app::Application& App, const fs::path& content_root_path, int tick_period, const bool randomize_spawn) 
         : api_strand_{api_strand},
-          game_{game},
           content_root_path_{content_root_path},
-          api_handler_{game_, players} {
-    }
+          api_handler_{App, tick_period, randomize_spawn} {}
 
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
@@ -210,7 +210,6 @@ public:
                         return send(ApiResponse);
                     }
                     catch (...) {
-                        //do smth
                     }
 
                     };
@@ -229,8 +228,7 @@ public:
                 );
             }
         }
-        catch (...) {
-            //do smth
+        catch (...) {   
         }
     }
 
@@ -242,7 +240,7 @@ private:
 
     Strand api_strand_;
 
-    model::Game& game_;
+    
 
     ApiHandler api_handler_;
 

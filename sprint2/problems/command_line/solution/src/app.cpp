@@ -23,7 +23,7 @@ namespace app {
 
 
 
-	JoinGameResult JoinGameUseCase::Join(const std::string& map_id, const std::string& name)
+	JoinGameResult JoinGameUseCase::Join(const std::string& map_id, const std::string& name, const bool randomize_spawn)
 	{
 		if (name.empty()) {
 			throw JoinGameError{ JoinGameErrorReason::InvalidName };
@@ -32,7 +32,7 @@ namespace app {
 		Dog::DogName dog_name(name);
 
 		if (auto session = game_.FindSession(Map::Id(map_id))) {
-			auto [player, token] = players_.AddPlayer(session->AddDog(dog_name), session);
+			auto [player, token] = players_.AddPlayer(session->AddDog(dog_name, randomize_spawn), session);
 
 			return { token, player->GetId() };
 		} 
@@ -201,9 +201,9 @@ namespace app {
 		}
 	}
 
-	JoinGameResult Application::JoinGame(const std::string& map_id, const std::string& name)
+	JoinGameResult Application::JoinGame(const std::string& map_id, const std::string& name, const bool randomize_spawn)
 	{
-		return join_game_.Join(map_id, name);
+		return join_game_.Join(map_id, name, randomize_spawn);
 	}
 
 	std::optional<ListPlayersResult> Application::GetPlayersList(const Token& token)
