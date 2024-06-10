@@ -80,6 +80,65 @@ namespace http_handler {
 
     }
 
+    StringResponse ApiHandler::MakeApiResponse(const StringRequest& req)
+    {
+
+        std::string_view config_file_path = req.target();
+
+        unsigned http_version = req.version();
+
+        std::string_view content_type = DefineContentType(config_file_path);
+
+        std::string_view sub_path = config_file_path.substr(0, 12);
+
+        StringResponse response;
+
+        if (sub_path == "/api/v1/maps"sv) { //переписать с find() - так выглядит как костыль
+            if (config_file_path.size() <= 13) {
+                response = MakeStringResponse(http::status::ok, MapsResponse(), req.version(), content_type);
+            }
+            else {
+                std::string map_id(config_file_path.substr(13));
+                model::Map::Id id(map_id.c_str());
+
+                if (game_.FindMap(id) != nullptr) {
+                    response = MakeStringResponse(http::status::ok, MapById(map_id, id), req.version(), content_type);
+                }
+                else {
+                    response = MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map not found"), req.version(), content_type);
+                }
+            }
+        }
+        else if (sub_path == "/api/v1/game"sv) {
+
+            std::string_view content_type = req.find(http::field::content_type)->value();
+
+            if (config_file_path.find("join") != std::string::npos) {
+                response = JoinGame(req, content_type);
+            }
+            else if (config_file_path.find("players") != std::string::npos) {
+                response = GetPlayers(req, content_type);
+            }
+            else if (config_file_path.find("state") != std::string::npos) {
+                response = GetState(req, content_type);
+            }
+            else if (config_file_path.find("player") != std::string::npos) {
+                if (config_file_path.find("action") != std::string::npos) {
+                    response = PlayerAction(req, content_type);
+                }
+            }
+            else if (config_file_path.find("tick") != std::string::npos) {
+                response = TimeControl(req, content_type);
+            }
+
+        }
+        else {
+            response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Bad request"), http_version, content_type);
+        }
+        response.set(http::field::cache_control, "no-cache"sv);
+        return response;
+    }
+
     std::string ApiHandler::MapsResponse()
 	{
 		json::array maps; 
@@ -362,6 +421,9 @@ namespace http_handler {
 
     StringResponse ApiHandler::TimeControl(const StringRequest& req, const std::string_view content_type)
     {
+        if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::POST, req.version(), content_type)) {
+            return *invalid_method;
+        }
         json::error_code ec;
 
         auto json_body = json::parse(req.body(), ec);
@@ -370,8 +432,15 @@ namespace http_handler {
             return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
                 req.version(), content_type);
         }
+        
+        auto it = json_body.as_object().find("timeDelta");
+        if (it == json_body.as_object().end() || it->value().is_bool() || it->value().is_double() || it->value().is_string() || it->value().is_null()) {
+            return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
+                req.version(), content_type);
+        }
+        auto tick = it->value().as_int64();
 
-        app::Application{ game_, players_ }.SetGameTime(json_body.as_object().at("timeDelta").as_int64());
+        app::Application{ game_, players_ }.Tick(tick);
 
         return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
     }

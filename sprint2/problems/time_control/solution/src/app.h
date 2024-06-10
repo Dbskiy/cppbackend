@@ -58,19 +58,13 @@ namespace app {
         std::shared_ptr<GameSession> session_;
         std::shared_ptr<Dog> dog_;
 
-
-    /*private:*/
-
     };
 
-
-    //вариант с одним классом 
     class Players {
     public:
         using PairPlayerAndToken = std::tuple<std::shared_ptr<Player>, Token>;
 
         Players::PairPlayerAndToken AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session);
-        std::shared_ptr<Player> FindByDogIdAndMapId(const Dog::DogId& dog_id, const Map::Id& map_id); 
         
         std::shared_ptr<Player> FindByToken(const Token& token);
 
@@ -213,16 +207,10 @@ namespace app {
 
     };
 
-    struct GameTime {
-        static int game_time;
-    };
-
     class PlayerActionUseCase {
     public:
         PlayerActionUseCase(Players& players)
         : players_(players) {}
-
-        void GetCorrectCoordinates(const Map* map, Dog::DogState& state);
 
         std::optional<std::string_view> MovePlayer(const Token&, const std::string&);
 
@@ -230,6 +218,21 @@ namespace app {
         Players& players_;
     };
 
+
+    class GameTime {
+    public:
+        GameTime(Game& game) : game_(game) {}
+
+        void MoveAllPlayers(int tick);
+
+    private:
+        Game& game_;
+        
+        void ChangeCoordinates(const Map* map, Dog::DogState& state, int tick) const;
+
+        void PointXOutOfRoad(Dog::DogState& state, int start_x, int end_x) const;
+        void PointYOutOfRoad(Dog::DogState& state, int start_y, int end_y) const;
+    };
 
     class Application {
     public:
@@ -245,9 +248,7 @@ namespace app {
 
         std::optional<std::string_view> MovePlayer(const Token& token, const std::string& move);
 
-        void SetGameTime(int time) {
-            GameTime::game_time = time;
-        }
+        void Tick(int tick);
 
     private:
         Game& game_;
@@ -257,5 +258,6 @@ namespace app {
         ListPlayersUseCase list_players_{ game_, players_ };
         GameStateUseCase game_state_{ game_, players_ };
         PlayerActionUseCase player_action{ players_ };
+        GameTime game_time_{ game_ };
     };
 }
