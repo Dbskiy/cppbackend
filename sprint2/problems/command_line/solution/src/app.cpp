@@ -6,7 +6,6 @@ namespace app {
 		auto token = generateToken();
 		auto player = std::make_shared<Player>(dog, session);
 
-		// Добавить player в контейнер игроков по необходимости
 		players_[token] = player;
 
 		return std::make_tuple(player, token);
@@ -134,11 +133,13 @@ namespace app {
 
 	void GameTime::ChangeCoordinates(const Map* map, Dog::DogState& state, int tick) const
 	{
+		const double ms_to_s = 1000.0;
+
 		std::vector<Road> available_roads = map->FindRoadsAt(state.position.x, state.position.y);
 
 		if (!available_roads.empty()) {
-			state.position.x += state.speed.Vx * static_cast<double>(tick) / 1000.0;
-			state.position.y += state.speed.Vy * static_cast<double>(tick) / 1000.0;
+			state.position.x += state.speed.Vx * static_cast<double>(tick) / ms_to_s;
+			state.position.y += state.speed.Vy * static_cast<double>(tick) / ms_to_s;
 		}
 
 		for (auto& road : available_roads) {
@@ -179,24 +180,27 @@ namespace app {
 
 	void GameTime::PointXOutOfRoad(Dog::DogState& state, int start_x, int end_x) const
 	{
-		if (state.position.x < start_x - 0.4) {
-			state.position.x = start_x - 0.4;
+		auto half_of_width = Road::half_of_width;
+
+		if (state.position.x < start_x - half_of_width) {
+			state.position.x = start_x - half_of_width;
 			state.SetDefaultSpeed();
 		}
-		else if (state.position.x > end_x + 0.4) {
-			state.position.x = end_x + 0.4;
+		else if (state.position.x > end_x + half_of_width) {
+			state.position.x = end_x + half_of_width;
 			state.SetDefaultSpeed();
 		}
 	}
 
 	void GameTime::PointYOutOfRoad(Dog::DogState& state, int start_y, int end_y) const
 	{
-		if (state.position.y < start_y - 0.4) {
-			state.position.y = start_y - 0.4;
+		auto half_of_width = Road::half_of_width;
+		if (state.position.y < start_y - half_of_width) {
+			state.position.y = start_y - half_of_width;
 			state.SetDefaultSpeed();
 		}
-		else if (state.position.y > end_y + 0.4) {
-			state.position.y = end_y + 0.4;
+		else if (state.position.y > end_y + half_of_width) {
+			state.position.y = end_y + half_of_width;
 			state.SetDefaultSpeed();
 		}
 	}

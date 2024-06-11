@@ -8,6 +8,7 @@ using namespace std::literals;
 std::vector<Road> Map::FindRoadsAt(double x, double y) const
 {
     std::vector<Road> result;
+    auto half_of_width = Road::half_of_width;
 
     for (auto& road : GetRoads()) {
 
@@ -24,7 +25,7 @@ std::vector<Road> Map::FindRoadsAt(double x, double y) const
             start.x = end.x = road.GetStart().x;
         }
 
-        if ((x >= start.x - 0.4) && (x <= end.x + 0.4) && (y >= start.y - 0.4) && (y <= end.y + 0.4)) {
+        if ((x >= start.x - half_of_width) && (x <= end.x + half_of_width) && (y >= start.y - half_of_width) && (y <= end.y + half_of_width)) {
             result.emplace_back(road);
         }
     }

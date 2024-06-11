@@ -52,6 +52,8 @@ public:
     constexpr static HorizontalTag HORIZONTAL{};
     constexpr static VerticalTag VERTICAL{};
 
+    static const double half_of_width;
+
     Road(HorizontalTag, Point start, Coord end_x) noexcept
         : start_{start}
         , end_{end_x, start.y} {
@@ -122,6 +124,7 @@ private:
     Point start_;
     Point end_;
 };
+    const double Road::half_of_width = 0.4;
 
 class Building {
 public:

@@ -33,6 +33,8 @@ add_executable(game_server
 	src/logger.h
 	src/app.cpp
 	src/app.h
+	src/ticker.cpp
+	src/ticker.h
 )
 target_include_directories(game_server PRIVATE CONAN_PKG::boost)
 target_link_libraries(game_server PRIVATE Threads::Threads CONAN_PKG::boost)

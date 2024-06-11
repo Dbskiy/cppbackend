@@ -146,7 +146,7 @@ namespace http_handler {
 		std::vector<model::Map> maps_vector = App_.game_.GetMaps(); //все доступные карты 
 
 		for (const auto& map : maps_vector) {
-			json::object map_properties; //объект, содержащий свойства одной карты
+            json::object map_properties; //объект, содержащий свойства одной карты
 
 			map_properties["id"] = *map.GetId();
 			map_properties["name"] = map.GetName();
@@ -336,10 +336,8 @@ namespace http_handler {
                 }
                 return MakeStringResponse(http::status::ok, json::serialize(res_body), req.version(), content_type);
             }
-            else {
-                return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
-            }
-            }, req, content_type);
+            return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
+        }, req, content_type);
     }
 
     StringResponse ApiHandler::PlayerAction(const StringRequest& req, const std::string_view content_type)
@@ -374,11 +372,7 @@ namespace http_handler {
             if (auto player_action_res = App_.MovePlayer(token, move)) {
                 return MakeStringResponse(http::status::ok, *player_action_res, req.version(), content_type);
             }
-            else {
-                return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
-            }
-
-
+            return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
 
         }, req, content_type);
     }
@@ -416,10 +410,9 @@ namespace http_handler {
                 res_body["players"] = players_json;
                 return MakeStringResponse(http::status::ok, json::serialize(res_body), req.version(), content_type);
             }
-            else {
-                return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
-            }
-            }, req, content_type);
+
+            return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
+        }, req, content_type);
     }
 
     StringResponse ApiHandler::TimeControl(const StringRequest& req, const std::string_view content_type)
@@ -484,7 +477,6 @@ namespace http_handler {
 
             //файл не существует
             return MakeStringResponse(status::not_found, "File Not Found"sv, http_version, ContentType::TEXT_PLAIN);
-
         }
     }
 

@@ -4,9 +4,9 @@
 #include <iostream>
 
 namespace http_server {
+	using namespace std::literals;
 
 	void ReportError(beast::error_code ec, std::string_view what) {
-		//std::cerr << what << ": "sv << ec.message() << std::endl;
 		logger::LOG(logger::GetErrorData(ec, what), "error");
 	}
 
@@ -18,7 +18,6 @@ namespace http_server {
 	}
 
 	void SessionBase::Read() {
-		using namespace std::literals;
 		// Очищаем запрос от прежнего значения (метод Read может быть вызван несколько раз)
 		request_ = {};
 		stream_.expires_after(30s);
@@ -30,7 +29,6 @@ namespace http_server {
 
 	void SessionBase::OnRead(beast::error_code ec, std::size_t bytes_read)
 	{
-		using namespace std::literals;
 		if (ec == http::error::end_of_stream) {
 			// Нормальная ситуация - клиент закрыл соединение
 			return Close();

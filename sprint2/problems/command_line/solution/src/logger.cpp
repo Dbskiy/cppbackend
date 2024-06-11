@@ -1,10 +1,6 @@
 #include "logger.h"
 
 #include <boost/log/expressions.hpp>
-//#include <boost/log/utility/manipulators/add_value.hpp>
-//#include <boost/log/utility/setup/common_attributes.hpp>
-//#include <boost/log/utility/setup/console.hpp>
-//#include <boost/json.hpp>
 #include <boost/date_time.hpp>
 
 namespace logger
@@ -81,22 +77,18 @@ namespace logger
 		json::object log;
 
 		auto& ts = *rec[timestamp];
-
 		log["timestamp"] = to_iso_extended_string(ts);
 
 		auto data = rec[additional_data];
-
 		log["data"] = data.get();
-
 		log["message"] = *rec[logging::expressions::smessage];
-
+		
 		strm << log;
 	}
 
 	void InitBoostLogFilter()
 	{
 		logging::add_common_attributes();
-
 
 		logging::add_console_log(
 			std::cout,
