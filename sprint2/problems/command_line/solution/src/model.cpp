@@ -5,6 +5,8 @@
 namespace model {
 using namespace std::literals;
 
+const double Road::half_of_width = 0.4;
+
 std::vector<Road> Map::FindRoadsAt(double x, double y) const
 {
     std::vector<Road> result;

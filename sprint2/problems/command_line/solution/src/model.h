@@ -124,7 +124,6 @@ private:
     Point start_;
     Point end_;
 };
-    const double Road::half_of_width = 0.4;
 
 class Building {
 public:

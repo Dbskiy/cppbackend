@@ -278,39 +278,36 @@ namespace http_handler {
         if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::POST, req.version(), content_type)) {
             return *invalid_method;
         }
-        else {
-            json::error_code ec;
+        json::error_code ec;
+            
+        auto json_body = json::parse(req.body(), ec);
 
-            auto json_body = json::parse(req.body(), ec);
+        //ошибка при парсинге json или при получении его свойств
+        if (ec || !json_body.as_object().contains("userName") || !json_body.as_object().contains("mapId")) {
+            return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Join game request parse error"), 
+                req.version(), content_type);
+        }
 
-            //ошибка при парсинге json или при получении его свойств
-            if (ec || !json_body.as_object().contains("userName") || !json_body.as_object().contains("mapId")) {
-                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Join game request parse error"),
-                    req.version(), content_type);
+        try {
+            std::string user_name = json_body.at("userName").as_string().c_str();
+            std::string map_id = json_body.at("mapId").as_string().c_str();
+
+            json::object join_res_body;
+
+            auto [token, playerId] = App_.JoinGame(map_id, user_name, randomize_spawn_);
+
+            join_res_body["authToken"] = *token;
+            join_res_body["playerId"] = *playerId;
+
+            return MakeStringResponse(http::status::ok, json::serialize(join_res_body), req.version(), content_type);
+
+        }
+        catch (const app::JoinGameError& e) {
+            if (e.GetReason() == app::JoinGameErrorReason::InvalidName) {
+                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid name"), req.version(), content_type);
             }
-
-            try {
-                std::string user_name = json_body.at("userName").as_string().c_str();
-                std::string map_id = json_body.at("mapId").as_string().c_str();
-
-                json::object join_res_body;
-
-                auto [token, playerId] = App_.JoinGame(map_id, user_name, randomize_spawn_);
-
-                join_res_body["authToken"] = *token;
-
-                join_res_body["playerId"] = *playerId;
-
-                return MakeStringResponse(http::status::ok, json::serialize(join_res_body), req.version(), content_type);
-
-            }
-            catch (const app::JoinGameError& e) {
-                if (e.GetReason() == app::JoinGameErrorReason::InvalidName) {
-                    return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid name"), req.version(), content_type);
-                }
-                else if (e.GetReason() == app::JoinGameErrorReason::InvalidMap) {
-                    return MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map Not Found"), req.version(), content_type);
-                }
+            else if (e.GetReason() == app::JoinGameErrorReason::InvalidMap) {
+                return MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map Not Found"), req.version(), content_type);
             }
         }
     }
