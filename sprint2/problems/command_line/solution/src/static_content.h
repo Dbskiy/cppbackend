@@ -4,7 +4,6 @@
 #include <boost/beast.hpp>
 #include <string>
 #include <sstream>
-//#include "request_handler.h"
 
 namespace fs = std::filesystem;
 namespace beast = boost::beast;
