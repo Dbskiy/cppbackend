@@ -1,7 +1,8 @@
 #pragma once
 
 #include <string>
-
+#include <unordered_map>
+#include <algorithm>
 /*
  * Декодирует основные HTML-мнемоники:
  * - &lt - <
@@ -19,3 +20,4 @@
  * - &amp;lt; декодируется в &lt;
  */
 std::string HtmlDecode(std::string_view str);
+
