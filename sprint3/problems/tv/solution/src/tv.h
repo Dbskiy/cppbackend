@@ -18,9 +18,12 @@ public:
      * Возвращает номер выбранного канала или std::nullopt, если телевизор выключен.
      */
     [[nodiscard]] std::optional<int> GetChannel() const noexcept {
-        return is_turned_on_ ? std::optional{channel_} : std::nullopt;
+        return is_turned_on_ ? std::optional{ channel_ } : std::nullopt;
     }
 
+    [[nodiscard]] std::optional<int> GetLastViewedChannel() const noexcept {
+        return is_turned_on_ ? std::optional{ last_viewed_channel_ } : std::nullopt;
+    }
     /*
      * Включает телевизор, если он был выключен. Если телевизор уже включен, ничего не делает.
      * При включении выбирается тот номер канала, который был выбран перед последним выключением.
@@ -46,7 +49,14 @@ public:
      */
     void SelectChannel(int channel) {
         /* Реализуйте самостоятельно этот метод и напишите тесты для него */
-        assert(!"TODO: Implement TV::SelectChannel");
+        if (last_viewed_channel_ == channel) return;
+
+        if (!is_turned_on_) throw std::logic_error("TV is turned off");
+
+        if (channel < MIN_CHANNEL || channel > MAX_CHANNEL) throw std::out_of_range("Channel is out of range");
+
+        last_viewed_channel_ = channel_;
+        channel_ = channel;
     }
 
     /*
@@ -56,10 +66,15 @@ public:
      */
     void SelectLastViewedChannel() {
         /* Реализуйте самостоятельно этот метод и напишите тесты для него */
-        assert(!"TODO: Implement TV::SelectLastViewedChannel");
+        if (!is_turned_on_) throw std::logic_error("TV is turned off");
+
+        int temp = last_viewed_channel_;
+        last_viewed_channel_ = channel_;
+        channel_ = temp;
     }
 
 private:
     bool is_turned_on_ = false;
     int channel_ = 1;
+    int last_viewed_channel_ = 1;
 };

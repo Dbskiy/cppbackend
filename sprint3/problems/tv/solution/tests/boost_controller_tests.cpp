@@ -72,6 +72,19 @@ BOOST_AUTO_TEST_CASE(on_TurnOn_command_with_some_arguments_prints_error_message)
 /*
  * Протестируйте остальные аспекты поведения класса Controller, когда TV выключен
  */
+
+BOOST_AUTO_TEST_CASE(on_SelectChannel_command_TV_is_off) {
+    RunMenuCommand("SelectChannel"s);
+    BOOST_CHECK_THROW(tv.SelectChannel(55), std::logic_error);
+    ExpectOutput("TV is turned off\n"sv);
+}
+
+BOOST_AUTO_TEST_CASE(on_SelectPreviousChannel_command_TV_is_off) {
+    RunMenuCommand("SelectPreviousChannel"s);
+    BOOST_CHECK_THROW(tv.SelectLastViewedChannel(), std::logic_error);
+    ExpectOutput("TV is turned off\n"sv);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 struct WhenTVIsOnFixture : ControllerFixture {
@@ -92,16 +105,34 @@ BOOST_AUTO_TEST_CASE(on_TurnOff_command_with_some_arguments_prints_error_message
     ExpectExtraArgumentsErrorInOutput("TurnOff"sv);
 }
 // Включите этот тест, после того, как реализуете метод TV::SelectChannel
-#if 0
 BOOST_AUTO_TEST_CASE(on_Info_prints_current_channel) {
     tv.SelectChannel(42);
     RunMenuCommand("Info"s);
     ExpectOutput("TV is turned on\nChannel number is 42\n"sv);
 }
-#endif
-/*
- * Протестируйте остальные аспекты поведения класса Controller, когда TV включен
- */
+
+BOOST_AUTO_TEST_CASE(on_SelectChannel_with_arguments_prints_channel_TV_on) {
+    RunMenuCommand("SelectChannel 55"s);
+    RunMenuCommand("Info"s);
+    ExpectOutput("TV is turned on\nChannel number is 55\n"sv);
+}
+
+BOOST_AUTO_TEST_CASE(on_SelectChannel_command_with_channel_out_of_range) {
+    RunMenuCommand("SelectChannel"s);
+    BOOST_CHECK_THROW(tv.SelectChannel(110), std::out_of_range);
+    ExpectOutput("Channel is out of range\n"sv);
+}
+
+BOOST_AUTO_TEST_CASE(on_SelectPreviousChannel_with_arguments_prints_error_message_TV_on) {
+    RunMenuCommand("SelectPreviousChannel 55"s);
+    ExpectExtraArgumentsErrorInOutput("SelectPreviousChannel"sv);
+}
+
+BOOST_AUTO_TEST_CASE(on_SelecetPreviousChannel_TV_on) {
+    RunMenuCommand("SelectPreviousChannel"s);
+    ExpectEmptyOutput();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE_END()
