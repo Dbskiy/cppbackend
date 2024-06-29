@@ -133,7 +133,6 @@ namespace http_handler {
                     response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Invalid endpoint"), http_version, content_type);
                 }
             }
-
         }
         response.set(http::field::cache_control, "no-cache"sv);
         return response;

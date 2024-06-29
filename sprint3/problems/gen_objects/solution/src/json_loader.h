@@ -12,6 +12,9 @@ namespace json_loader {
 model::Game LoadGame(const std::filesystem::path& json_path);
 
 model::Map::DogSpeed DefaultDogSpeed(const json::object&);
+
+void LootConfiguration(model::Game& game, const json::object& json_object);
+
 model::Map::DogSpeed DogSpeedOnTheMap(const json::object& map_json, const auto def_speed);
 
 void InsertRoads(model::Map&, const auto&);

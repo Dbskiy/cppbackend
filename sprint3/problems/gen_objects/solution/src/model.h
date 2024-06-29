@@ -174,11 +174,13 @@ private:
         using Roads = std::vector<Road>;
         using Buildings = std::vector<Building>;
         using Offices = std::vector<Office>;
+        using LootTypesNum = util::Tagged<int, Map>;
 
-        Map(Id id, std::string name, DogSpeed speed) noexcept
+        Map(Id id, std::string name, DogSpeed speed, LootTypesNum loot_types_num) noexcept
             : id_(std::move(id))
             , name_(std::move(name))
-            , speed_(std::move(speed)) 
+            , speed_(std::move(speed))
+            , loot_types_num_(std::move(loot_types_num))
         {
         }
 
@@ -228,6 +230,7 @@ private:
         DogSpeed speed_;
         Roads roads_;
         Buildings buildings_;
+        LootTypesNum loot_types_num_;
 
         OfficeIdToIndex warehouse_id_to_index_;
         Offices offices_;
@@ -345,6 +348,11 @@ public:
     using Sessions = std::vector<std::shared_ptr<GameSession>>;
     using PairDogAndSession = std::pair<std::shared_ptr<Dog>, std::shared_ptr<GameSession>>;
 
+    struct LootGeneratorConfig {
+        double period_;
+        double probability_;
+    };
+
     void AddMap(Map map);
 
     const Maps& GetMaps() const noexcept {
@@ -364,6 +372,17 @@ public:
 
     std::shared_ptr<GameSession> FindSession(Map::Id map_id);
 
+    void SetLootGeneratorConfig(double period, double probability) {
+        loot_generator_config_->period_ = period;
+        loot_generator_config_->probability_ = probability;
+    }
+
+    const std::optional<LootGeneratorConfig>& GetLootGeneratorConfig() const noexcept {
+        return loot_generator_config_;
+    }
+
+
+
 private:
     using MapIdHasher = util::TaggedHasher<Map::Id>;
     using MapIdToIndex = std::unordered_map<Map::Id, size_t, MapIdHasher>;
@@ -373,6 +392,7 @@ private:
     MapIdToIndex map_id_to_index_;
 
     Sessions sessions_;
+    std::optional<LootGeneratorConfig> loot_generator_config_;
 };
 
 }  // namespace model

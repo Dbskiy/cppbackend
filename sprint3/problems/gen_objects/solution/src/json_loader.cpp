@@ -30,6 +30,7 @@ namespace json_loader {
 
         const auto default_speed = DefaultDogSpeed(json_object);
 
+        LootConfiguration(game, json_object);
 
         const json::array& all_maps = json_object.at("maps").as_array();
 
@@ -38,15 +39,18 @@ namespace json_loader {
             std::string name = map_json.at("name").as_string().c_str();
             const auto dog_speed = DogSpeedOnTheMap(map_json.as_object(), default_speed);
 
+            //сам массив с трофеем на конкретной карте передавать в отдельный модуль extra_data
+            
+            //добавить количество типов трофеев на карте
+            model::Map::LootTypesNum loot_types_num(map_json.at("lootTypes").as_array().size());
 
-            model::Map map(map_id, name, dog_speed);
+            model::Map map(map_id, name, dog_speed, loot_types_num);
 
             InsertRoads(map, map_json);
 
             InsertBuildings(map, map_json);
             
             InsertOffices(map, map_json);
-
             
             game.AddMap(map);
 
@@ -60,6 +64,16 @@ namespace json_loader {
             return model::Map::DogSpeed(json_object.at("defaultDogSpeed").as_double());
         }
         return model::Map::DogSpeed(1);
+    }
+
+    void LootConfiguration(model::Game& game, const json::object& json_object)
+    {
+        if (json_object.contains("lootGeneratorConfig")) {
+            double period = json_object.at("lootGeneratorConfig").as_object().at("period").as_double();
+            double probability = json_object.at("lootGeneratorConfig").as_object().at("period").as_double();
+
+            game.SetLootGeneratorConfig(period, probability);
+        }
     }
 
     model::Map::DogSpeed DogSpeedOnTheMap(const json::object& map_json, const auto def_speed)
