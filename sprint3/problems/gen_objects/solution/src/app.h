@@ -9,6 +9,7 @@
 #include <optional>
 #include <unordered_set>
 #include "model.h"
+#include "loot_generator.h"
 
 
 namespace beast = boost::beast;
@@ -168,14 +169,22 @@ namespace app {
     class GameStateResult 
     {
     public:
-        GameStateResult(std::unordered_map<std::uint64_t, Dog::DogState>& players_state) : players_state_(players_state) {}
+        GameStateResult(std::unordered_map<std::uint64_t, Dog::DogState>& players_state, std::unordered_map<int, Loot>& loot_state) 
+            : players_state_(players_state),
+              loot_state_(loot_state)
+        {}
 
         std::unordered_map<std::uint64_t, Dog::DogState> GetPlayersState() {
             return players_state_;
         }
 
+        std::unordered_map<int, Loot> GetLootState() {
+            return loot_state_;
+        }
+
     private:
         std::unordered_map<std::uint64_t, Dog::DogState> players_state_;
+        std::unordered_map<int, Loot> loot_state_;
     };
 
     
@@ -225,6 +234,8 @@ namespace app {
 
         void MoveAllPlayers(int tick);
 
+        void GenerateLoot(loot_gen::LootGenerator& loot_generator, int tick);
+
     private:
         Game& game_;
         
@@ -251,7 +262,7 @@ namespace app {
 
         std::optional<std::string_view> MovePlayer(const Token& token, const std::string& move);
 
-        void Tick(int tick);
+        void Tick(int tick, loot_gen::LootGenerator& loot_generator);
 
     private:
 

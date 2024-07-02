@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <boost/json.hpp>
 #include "model.h"
+#include "loot_extra_data.h"
 
 namespace json = boost::json;
 using namespace std::literals;
@@ -14,6 +15,8 @@ model::Game LoadGame(const std::filesystem::path& json_path);
 model::Map::DogSpeed DefaultDogSpeed(const json::object&);
 
 void LootConfiguration(model::Game& game, const json::object& json_object);
+
+model::Map::LootTypesProp LootTypesProperties(json::array loot_types);
 
 model::Map::DogSpeed DogSpeedOnTheMap(const json::object& map_json, const auto def_speed);
 

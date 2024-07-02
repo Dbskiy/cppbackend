@@ -177,6 +177,24 @@ namespace http_handler {
             map["offices"] = OfficesProperties(this_map);
         }
 
+        if (!this_map->GetLootTypesProp().empty()) {
+            auto& loot_types = this_map->GetLootTypesProp();
+
+            json::array obj_array;
+            for (const auto& loot_type : loot_types) {
+                json::object type;
+
+                for (const auto& pair : loot_type) {
+                    std::visit([&type, &pair](auto&& arg) {
+                        type[pair.first] = arg;
+                    }, pair.second);
+                }
+
+                obj_array.emplace_back(type);
+            }
+            map["lootTypes"] = obj_array;
+        }
+
         std::string response_body = json::serialize(map);
 
         return response_body;
@@ -380,13 +398,14 @@ namespace http_handler {
                 return *invalid_method;
             }
 
-            auto players_state = App_.GetGameState(token);
+            auto game_state = App_.GetGameState(token);
 
-            if (players_state) {
+            if (game_state) {
                 json::object res_body;
                 json::object players_json;
 
-                for (const auto& pair : players_state->GetPlayersState()) {
+                //Состояние игроков
+                for (const auto& pair : game_state->GetPlayersState()) {
 
                     json::object stats;
                     json::array position;
@@ -404,6 +423,26 @@ namespace http_handler {
                     players_json[std::to_string(pair.first)] = stats;
                 }
                 res_body["players"] = players_json;
+                
+                
+                json::object lost_objects;
+                
+                for (const auto& pair : game_state->GetLootState()) {
+                    json::object lost_object;
+                    json::array coord;
+
+                    lost_object["type"] = pair.second.type_;
+                    
+                    coord.push_back(pair.second.pos_.x);
+                    coord.push_back(pair.second.pos_.y);
+
+                    lost_object["pos"] = coord;
+
+                    lost_objects[std::to_string(pair.first)] = lost_object;
+                }
+                
+                res_body["lostObjects"] = lost_objects;
+
                 return MakeStringResponse(http::status::ok, json::serialize(res_body), req.version(), content_type);
             }
 
@@ -432,7 +471,7 @@ namespace http_handler {
         }
         tick_period_ = it->value().as_int64();
 
-        App_.Tick(tick_period_);
+        App_.Tick(tick_period_, loot_gen_);
 
         return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
     }

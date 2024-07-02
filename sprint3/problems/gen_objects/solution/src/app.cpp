@@ -86,7 +86,15 @@ namespace app {
 				players_state[id] = state;
 			}
 
-			return { players_state };
+			auto& all_loot = cur_player->session_->GetAllLoot();
+			std::unordered_map<int, Loot> loot_state;
+
+			for (int i = 0; i < all_loot.size(); i++)
+			{
+				loot_state[i] = all_loot[i];
+			}
+
+			return GameStateResult{ players_state, loot_state };
 			
 	}
 
@@ -127,6 +135,18 @@ namespace app {
 				Dog::DogState& state = dog->GetDogState();
 
 				ChangeCoordinates(map, state, tick);
+			}
+		}
+	}
+
+	void GameTime::GenerateLoot(loot_gen::LootGenerator& loot_generator, int tick)
+	{
+		for (const auto& session : game_.GetSessions()) {
+			auto new_loot_num = loot_generator.Generate(std::chrono::milliseconds(tick), session->GetAllLoot().size(), session->GetDogs().size());
+
+			for (int i = 0; i < new_loot_num; i++)
+			{
+				session->AddRandomLoot();
 			}
 		}
 	}
@@ -223,9 +243,10 @@ namespace app {
 	std::optional<std::string_view> Application::MovePlayer(const Token& token, const std::string& move) {
 		return player_action.MovePlayer(token, move);
 	}
-	void Application::Tick(int tick)
+	void Application::Tick(int tick, loot_gen::LootGenerator& loot_generator)
 	{
 		game_time_.MoveAllPlayers(tick);
+		game_time_.GenerateLoot(loot_generator, tick);
 	}
 }
 

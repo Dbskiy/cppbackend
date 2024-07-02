@@ -10,6 +10,8 @@ namespace json_loader {
         // Загрузить содержимое файла json_path, например, в виде строки
         // Распарсить строку как JSON, используя boost::json::parse
         // Загрузить модель игры из файла
+        using namespace loot_extra_data;
+
         std::ifstream f_map(json_path);
 
         if (!f_map.is_open()) {
@@ -42,9 +44,14 @@ namespace json_loader {
             //сам массив с трофеем на конкретной карте передавать в отдельный модуль extra_data
             
             //добавить количество типов трофеев на карте
-            model::Map::LootTypesNum loot_types_num(map_json.at("lootTypes").as_array().size());
+            json::array loot_types = map_json.at("lootTypes").as_array();
 
-            model::Map map(map_id, name, dog_speed, loot_types_num);
+            model::Map::LootTypesNum loot_types_num(loot_types.size());
+
+            model::Map::LootTypesProp loot_types_prop = LootTypesProperties(std::move(loot_types));
+
+            //мб для properties тоже добавить insert
+            model::Map map(map_id, name, dog_speed, loot_types_num, loot_types_prop);
 
             InsertRoads(map, map_json);
 
@@ -74,6 +81,13 @@ namespace json_loader {
 
             game.SetLootGeneratorConfig(period, probability);
         }
+    }
+
+    model::Map::LootTypesProp LootTypesProperties(json::array loot_types)
+    {
+        loot_extra_data::LootExtraData extra_data(std::move(loot_types));
+
+        return extra_data.GetLootTypesProp();
     }
 
     model::Map::DogSpeed DogSpeedOnTheMap(const json::object& map_json, const auto def_speed)

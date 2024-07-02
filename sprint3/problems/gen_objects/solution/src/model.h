@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 #include <random>
+#include <optional>
+#include <variant>
 
 #include "tagged.h"
 
@@ -37,6 +39,11 @@ struct Speed {
 struct Position {
     double x{};
     double y{};
+};
+
+struct Loot {
+    int type_{};
+    Position pos_;
 };
 
 class Road {
@@ -175,12 +182,15 @@ private:
         using Buildings = std::vector<Building>;
         using Offices = std::vector<Office>;
         using LootTypesNum = util::Tagged<int, Map>;
+        using loot_variant = std::variant<std::string, int64_t, double>;
+        using LootTypesProp = std::vector<std::unordered_map<std::string, loot_variant>>;
 
-        Map(Id id, std::string name, DogSpeed speed, LootTypesNum loot_types_num) noexcept
+        Map(Id id, std::string name, DogSpeed speed, LootTypesNum loot_types_num, const LootTypesProp& loot_types_prop) noexcept
             : id_(std::move(id))
             , name_(std::move(name))
             , speed_(std::move(speed))
             , loot_types_num_(std::move(loot_types_num))
+            , loot_types_prop_(loot_types_prop)
         {
         }
 
@@ -208,6 +218,14 @@ private:
             return speed_;
         }
 
+        const LootTypesNum& GetLootTypesNum() const noexcept {
+            return loot_types_num_;
+        }
+
+        const LootTypesProp& GetLootTypesProp() const noexcept {
+            return loot_types_prop_;
+        }
+
         void AddRoad(const Road& road) {
             roads_.emplace_back(road);
 
@@ -231,6 +249,7 @@ private:
         Roads roads_;
         Buildings buildings_;
         LootTypesNum loot_types_num_;
+        LootTypesProp loot_types_prop_;
 
         OfficeIdToIndex warehouse_id_to_index_;
         Offices offices_;
@@ -287,6 +306,7 @@ private:
 class GameSession {
 public:
     using Dogs = std::vector<std::shared_ptr<Dog>>;
+    using AllLoot = std::vector<Loot>;
 
     explicit GameSession(Map* map) : map_(map) {};
 
@@ -303,6 +323,22 @@ public:
 
     }
 
+    void AddRandomLoot() {
+        if (*map_->GetLootTypesNum() > 0) {
+            Loot loot;
+
+            loot.pos_ = GenerateRandomPointOnMap();
+
+            loot.type_ = GenerateRandomLootType();
+
+            all_loot_.emplace_back(loot);
+        }
+    }
+
+    const AllLoot& GetAllLoot() const noexcept {
+        return all_loot_;
+    }
+
     const Map* GetMap() const noexcept {
         return map_;
     }
@@ -310,6 +346,8 @@ public:
 private:
     Dogs dogs_;
     Map* map_;
+
+    AllLoot all_loot_;
 
     Position GenerateSpawn(const bool randomize_spawn) {
 
@@ -339,6 +377,29 @@ private:
         return pos;
     }
 
+    //Вынести часть кода в отдельную фукнцию!
+    Position GenerateRandomPointOnMap() {
+        auto& roads = map_->GetRoads();
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis_road(0, roads.size() - 1);
+
+        int road_index = dis_road(gen);
+
+        auto& random_road = roads[road_index];
+        auto [x, y] = random_road.GetRandomPoint();
+
+        return { x, y };
+    }
+
+    int GenerateRandomLootType() {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis_loot_type(0, *map_->GetLootTypesNum() - 1);
+
+        return dis_loot_type(gen);
+    }
 
 };
 
@@ -373,11 +434,10 @@ public:
     std::shared_ptr<GameSession> FindSession(Map::Id map_id);
 
     void SetLootGeneratorConfig(double period, double probability) {
-        loot_generator_config_->period_ = period;
-        loot_generator_config_->probability_ = probability;
+        loot_generator_config_ = LootGeneratorConfig{ period, probability };
     }
 
-    const std::optional<LootGeneratorConfig>& GetLootGeneratorConfig() const noexcept {
+    std::optional<LootGeneratorConfig> GetLootGeneratorConfig() const noexcept {
         return loot_generator_config_;
     }
 
