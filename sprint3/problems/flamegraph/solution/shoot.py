@@ -22,11 +22,9 @@ def start_server():
     parser.add_argument('server', type=str)
     return parser.parse_args().server
 
-
 def run(command, output=None):
     process = subprocess.Popen(shlex.split(command), stdout=output, stderr=subprocess.DEVNULL)
     return process
-
 
 def stop(process, wait=False):
     if process.poll() is None and wait:
@@ -48,11 +46,13 @@ def make_shots():
 
 
 server = run(start_server())
-perf_record = run(f'perf record -ga')
+perf_record = run('perf record -ga')
 make_shots()
 stop(server)
 time.sleep(1)
-
 stop(perf_record, wait=True)
-flame_graph = run('perf script -i perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl > graph.svg')
+
+perf_script = run('perf script -i perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/stackcollapse-perf.pl')
+
+stop(perf_script, wait=True)
 print('Job done')
