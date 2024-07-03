@@ -110,9 +110,9 @@ private:
 
     loot_gen::LootGenerator& loot_gen_;
 
-    std::string MapsResponse();
+    StringResponse MapsResponse(const StringRequest& req, const std::string_view content_type);
 
-    std::string MapById(const std::string&, model::Map::Id);
+    StringResponse MapById(const StringRequest& req, const std::string_view content_type, model::Map::Id);
 
     json::array RoadsProperties(const model::Map*); 
 

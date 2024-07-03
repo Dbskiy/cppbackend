@@ -22,8 +22,9 @@ def start_server():
     parser.add_argument('server', type=str)
     return parser.parse_args().server
 
-def run(command, output=None):
-    process = subprocess.Popen(shlex.split(command), stdout=output, stderr=subprocess.DEVNULL)
+
+def run(command, input=None, output=None):
+    process = subprocess.Popen(shlex.split(command), stdin=input, stdout=output, stderr=subprocess.DEVNULL)
     return process
 
 def stop(process, wait=False):
@@ -46,13 +47,22 @@ def make_shots():
 
 
 server = run(start_server())
-perf_record = run('perf record -ga')
+
+perf_record = run("perf record -ga")
+
 make_shots()
 stop(server)
+
 time.sleep(1)
-stop(perf_record, wait=True)
+stop(perf_record)
+perf_record.wait()
 
-perf_script = run('perf script -i perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/stackcollapse-perf.pl')
+perf_script = run("perf script -i perf.data", output=subprocess.PIPE)
+stackcollapse_perf = run("./FlameGraph/stackcollapse-perf.pl", input=perf_script.stdout, output=subprocess.PIPE)
+perf_script.wait()
 
-stop(perf_script, wait=True)
+with open('graph.svg', 'w') as f:
+    flamegraph = run("./FlameGraph/flamegraph.pl", input=stackcollapse_perf.stdout, output=f)
+    stackcollapse_perf.wait()
+    flamegraph.wait()
 print('Job done')

@@ -93,23 +93,17 @@ namespace http_handler {
 
         if (config_file_path.find("/api/v1/maps") != std::string::npos) { 
             if (config_file_path.size() <= 13) {
-                response = MakeStringResponse(http::status::ok, MapsResponse(), req.version(), content_type);
+                response = MapsResponse(req, content_type);
             }
             else {
                 std::string map_id(config_file_path.substr(13));
                 model::Map::Id id(map_id.c_str());
-
-                if (App_.game_.FindMap(id) != nullptr) {
-                    response = MakeStringResponse(http::status::ok, MapById(map_id, id), req.version(), content_type);
-                }
-                else {
-                    response = MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map not found"), req.version(), content_type);
-                }
+                response = MapById(req, content_type, id);
             }
         }
         else if (config_file_path.find("/api/v1/game") != std::string::npos) {
 
-            std::string_view content_type = req.find(http::field::content_type)->value();
+            //std::string_view content_type = req.find(http::field::content_type)->value();
 
             if (config_file_path.find("join") != std::string::npos) {
                 response = JoinGame(req, content_type);
@@ -138,8 +132,12 @@ namespace http_handler {
         return response;
     }
 
-    std::string ApiHandler::MapsResponse()
+    StringResponse ApiHandler::MapsResponse(const StringRequest& req, const std::string_view content_type)
 	{
+        if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::GET_HEAD, req.version(), content_type)) {
+            return *invalid_method;
+        }
+
 		json::array maps; 
 
 		std::vector<model::Map> maps_vector = App_.game_.GetMaps(); //все доступные карты 
@@ -153,13 +151,20 @@ namespace http_handler {
 			maps.push_back(map_properties);
 		}
 
-		std::string response_body = json::serialize(maps);
+        return MakeStringResponse(http::status::ok, json::serialize(maps) , req.version(), content_type);
 
-		return response_body;
 	}
 
-	std::string ApiHandler::MapById(const std::string& map_id, model::Map::Id id)
+	StringResponse ApiHandler::MapById(const StringRequest& req, const std::string_view content_type, model::Map::Id id)
 	{
+        if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::GET_HEAD, req.version(), content_type)) {
+            return *invalid_method;
+        }
+
+        if (App_.game_.FindMap(id) == nullptr) {
+            return MakeStringResponse(http::status::not_found, ErrorResponse("mapNotFound", "Map not found"), req.version(), content_type);
+        }
+
         const model::Map* this_map = App_.game_.FindMap(id);
 
         json::object map;
@@ -195,9 +200,7 @@ namespace http_handler {
             map["lootTypes"] = obj_array;
         }
 
-        std::string response_body = json::serialize(map);
-
-        return response_body;
+        return MakeStringResponse(http::status::ok, json::serialize(map), req.version(), content_type);
 	}
 
     json::array ApiHandler::RoadsProperties(const model::Map* this_map)
@@ -393,10 +396,11 @@ namespace http_handler {
 
     StringResponse ApiHandler::GetState(const StringRequest& req, const std::string_view content_type)
     {
+        if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::GET_HEAD, req.version(), content_type)) {
+            return *invalid_method;
+        }
+
         return ExecuteAuthorized([&](const app::Token& token) {
-            if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::GET_HEAD, req.version(), content_type)) {
-                return *invalid_method;
-            }
 
             auto game_state = App_.GetGameState(token);
 
