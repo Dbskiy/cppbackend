@@ -47,8 +47,8 @@ def make_shots():
 
 
 server = run(start_server())
-
-perf_record = run("perf record -ga")
+perf_record_cmd = f'perf record -ga -o perf.data'
+perf_record = run(perf_record_cmd, output=subprocess.DEVNULL)
 
 make_shots()
 stop(server)
