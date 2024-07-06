@@ -114,7 +114,7 @@ namespace app {
         JoinGameErrorReason reason_;
     };
 
-    class JoinGameResult //класс для доступа к необходимым полям корректного ответа сервера
+    class JoinGameResult //РєР»Р°СЃСЃ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє РЅРµРѕР±С…РѕРґРёРјС‹Рј РїРѕР»СЏРј РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РѕС‚РІРµС‚Р° СЃРµСЂРІРµСЂР°
     {
     public:
         JoinGameResult(Token token, Dog::DogId dog_id)
@@ -230,15 +230,15 @@ namespace app {
 
     class GameTime {
     public:
-        GameTime(Game& game) : game_(game) {}
+        GameTime(Game& game, loot_gen::LootGenerator& loot_gen) : game_(game), loot_gen_(loot_gen) {}
 
         void MoveAllPlayers(int tick);
 
-        void GenerateLoot(loot_gen::LootGenerator& loot_generator, int tick);
+        void GenerateLoot(int tick);
 
     private:
         Game& game_;
-        
+        loot_gen::LootGenerator loot_gen_;
         void ChangeCoordinates(const Map* map, Dog::DogState& state, int tick) const;
 
         void PointXOutOfRoad(Dog::DogState& state, int start_x, int end_x) const;
@@ -247,12 +247,14 @@ namespace app {
 
     class Application {
     public:
-        Application(Game& game, Players& players)
-        : game_(game),
-          players_(players) {};
+        Application(Game& game, Players& players, loot_gen::LootGenerator& loot_gen)
+            : game_(game),
+            players_(players),
+            loot_gen_(loot_gen) {}
         
         Game& game_;
         Players& players_;
+        loot_gen::LootGenerator loot_gen_;
 
         JoinGameResult JoinGame(const std::string& map_id, const std::string& name, const bool randomize_spawn);
 
@@ -262,7 +264,7 @@ namespace app {
 
         std::optional<std::string_view> MovePlayer(const Token& token, const std::string& move);
 
-        void Tick(int tick, loot_gen::LootGenerator& loot_generator);
+        void Tick(int tick);
 
     private:
 
@@ -270,6 +272,6 @@ namespace app {
         ListPlayersUseCase list_players_{ game_, players_ };
         GameStateUseCase game_state_{ game_, players_ };
         PlayerActionUseCase player_action{ players_ };
-        GameTime game_time_{ game_ };
+        GameTime game_time_{ game_, loot_gen_ };
     };
 }

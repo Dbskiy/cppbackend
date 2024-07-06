@@ -50,11 +50,11 @@ namespace app {
 				return std::nullopt;
 			}
 
-			//получение списка персонажей в игровой сессии
+			//РїРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РїРµСЂСЃРѕРЅР°Р¶РµР№ РІ РёРіСЂРѕРІРѕР№ СЃРµСЃСЃРёРё
 			auto& dogs = cur_player->session_->GetDogs();
 			std::unordered_map<std::uint64_t, std::string> list_players;
 
-			//итерация по каждому персонажу
+			//РёС‚РµСЂР°С†РёСЏ РїРѕ РєР°Р¶РґРѕРјСѓ РїРµСЂСЃРѕРЅР°Р¶Сѓ
 			for (auto& dog : dogs) {
 				std::string name = *dog->GetDogName();
 
@@ -139,10 +139,10 @@ namespace app {
 		}
 	}
 
-	void GameTime::GenerateLoot(loot_gen::LootGenerator& loot_generator, int tick)
+	void GameTime::GenerateLoot(int tick)
 	{
 		for (const auto& session : game_.GetSessions()) {
-			auto new_loot_num = loot_generator.Generate(std::chrono::milliseconds(tick), session->GetAllLoot().size(), session->GetDogs().size());
+			auto new_loot_num = loot_gen_.Generate(std::chrono::milliseconds(tick), session->GetAllLoot().size(), session->GetDogs().size());
 
 			for (int i = 0; i < new_loot_num; i++)
 			{
@@ -243,10 +243,11 @@ namespace app {
 	std::optional<std::string_view> Application::MovePlayer(const Token& token, const std::string& move) {
 		return player_action.MovePlayer(token, move);
 	}
-	void Application::Tick(int tick, loot_gen::LootGenerator& loot_generator)
+
+	void Application::Tick(int tick)
 	{
 		game_time_.MoveAllPlayers(tick);
-		game_time_.GenerateLoot(loot_generator, tick);
+		game_time_.GenerateLoot(tick);
 	}
 }
 

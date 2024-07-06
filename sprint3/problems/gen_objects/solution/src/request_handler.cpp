@@ -124,6 +124,7 @@ namespace http_handler {
                     response = TimeControl(req, content_type);
                 }
                 else {
+                    std::cout << tick_period_ << std::endl;
                     response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Invalid endpoint"), http_version, content_type);
                 }
             }
@@ -427,8 +428,7 @@ namespace http_handler {
                     players_json[std::to_string(pair.first)] = stats;
                 }
                 res_body["players"] = players_json;
-                
-                
+
                 json::object lost_objects;
                 
                 for (const auto& pair : game_state->GetLootState()) {
@@ -473,9 +473,10 @@ namespace http_handler {
             return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
                 req.version(), content_type);
         }
-        tick_period_ = it->value().as_int64();
 
-        App_.Tick(tick_period_, loot_gen_);
+        auto tick = it->value().as_int64();
+
+        App_.Tick(tick);
 
         return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
     }
@@ -506,7 +507,7 @@ namespace http_handler {
                 return MakeStringResponse(status::not_found, "File Not Found"sv, http_version, ContentType::TEXT_PLAIN);
             }
 
-            //иначе создаем новый путь, добавив в начало путь к корневой директории со статическими файлами
+            //иначе создаем новый путь, добавив в начало путь к корневой директории со статическими файлам и
             fs::path new_fs_path = fs::weakly_canonical(root_path / rel_fs_path);
 
             //если файл существует

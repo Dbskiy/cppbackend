@@ -91,8 +91,6 @@ int main(int argc, const char* argv[]) {
             // 1. Загружаем карту из файла и построить модель игры
             model::Game game = json_loader::LoadGame(args->config_file);
 
-            auto interval = std::chrono::milliseconds(static_cast<int64_t>(game.GetLootGeneratorConfig()->period_));
-            loot_gen::LootGenerator loot_generator(interval, game.GetLootGeneratorConfig()->probability_);
 
             const unsigned num_threads = std::thread::hardware_concurrency();
             
@@ -114,11 +112,14 @@ int main(int argc, const char* argv[]) {
             
             app::Players players;
 
-            app::Application App_{game, players};
+            auto interval = std::chrono::seconds(static_cast<int64_t>(game.GetLootGeneratorConfig()->period_));
+            loot_gen::LootGenerator loot_generator(interval, game.GetLootGeneratorConfig()->probability_);
+            
+            app::Application App_{game, players, loot_generator};
 
             if (tick_period > 0) {
                 auto ticker = std::make_shared<Ticker>(api_strand, std::chrono::milliseconds(tick_period),
-                    [&App_, &loot_generator](std::chrono::milliseconds delta) { App_.Tick(delta.count(), loot_generator); }
+                    [&App_, &loot_generator](std::chrono::milliseconds delta) { App_.Tick(delta.count()); }
                 );
 
                 ticker->Start();
@@ -126,7 +127,7 @@ int main(int argc, const char* argv[]) {
 
 
             // 4. Создаём обработчик HTTP-запросов и связываем его с моделью игры
-            auto handler = std::make_shared<http_handler::RequestHandler>(api_strand, App_, loot_generator, fs::path(args->static_files_root),
+            auto handler = std::make_shared<http_handler::RequestHandler>(api_strand, App_, fs::path(args->static_files_root),
                 args->tick_period, args->randomize_spawn_points);
 
 

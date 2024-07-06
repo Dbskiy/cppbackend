@@ -94,11 +94,10 @@ struct ContentType {
 class ApiHandler
 {
 public:
-    explicit ApiHandler(app::Application& App, loot_gen::LootGenerator& loot_generator, int tick_period, const bool randomize_spawn) 
+    explicit ApiHandler(app::Application& App, int tick_period, const bool randomize_spawn) 
         : tick_period_(tick_period),
           randomize_spawn_(randomize_spawn),
-          App_{App},
-          loot_gen_{loot_generator} {}
+          App_{App} {}
 
     StringResponse MakeApiResponse(const StringRequest& req);
 
@@ -107,8 +106,6 @@ private:
     bool randomize_spawn_;
 
     app::Application App_;
-
-    loot_gen::LootGenerator& loot_gen_;
 
     StringResponse MapsResponse(const StringRequest& req, const std::string_view content_type);
 
@@ -187,10 +184,10 @@ class RequestHandler : public std::enable_shared_from_this<RequestHandler> {
 public:
     using Strand = net::strand<net::io_context::executor_type>;
 
-    explicit RequestHandler(Strand api_strand, app::Application& App, loot_gen::LootGenerator& loot_gen, const fs::path& content_root_path, int tick_period, const bool randomize_spawn) 
+    explicit RequestHandler(Strand api_strand, app::Application& App, const fs::path& content_root_path, int tick_period, const bool randomize_spawn) 
         : api_strand_{api_strand},
           content_root_path_{content_root_path},
-          api_handler_{App, loot_gen, tick_period, randomize_spawn} {}
+          api_handler_{App, tick_period, randomize_spawn} {}
 
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
