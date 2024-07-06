@@ -77,7 +77,7 @@ namespace json_loader {
     {
         if (json_object.contains("lootGeneratorConfig")) {
             double period = json_object.at("lootGeneratorConfig").as_object().at("period").as_double();
-            double probability = json_object.at("lootGeneratorConfig").as_object().at("period").as_double();
+            double probability = json_object.at("lootGeneratorConfig").as_object().at("probability").as_double();
 
             game.SetLootGeneratorConfig(period, probability);
         }
