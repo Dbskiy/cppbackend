@@ -45,7 +45,7 @@ namespace test_data {
 		std::mt19937 gen(rd());
 		std::uniform_real_distribution<double> dis_x(start_x + 0.5, end_x - 0.5);
 
-		return { dis_x(gen), 0};
+		return { dis_x(gen), 0 };
 	}
 
 	TestClass GetTestProvider() {
@@ -90,14 +90,27 @@ namespace test_data {
 	/*TestClass GetTestProvider1() {
 		TestClass test_provider;
 
-		for (int i = 0; i < 5; i++)
+		double last_pos_x = 0.0;
+		double last_pos_y = 0.0;
+
+		for (int i = 1; i < 6; i++)
 		{
 			Gatherer gatherer;
 			gatherer.width = dog_width;
+
+			Item item;
+			item.width = item_width;
 			
 			if (i % 2 == 0) {
+				gatherer.start_pos = { last_pos_x, 0.0 };
+				gatherer.end_pos = { last_pos_x + static_cast<double>(i), 0.0 };
 
+				item.position = {last_pos_x + }
 			}
+
+			gatherer.end_pos()
+
+				Item item;
 		}
 	}*/
 
