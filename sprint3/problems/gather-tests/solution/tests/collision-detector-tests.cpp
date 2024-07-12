@@ -1,5 +1,10 @@
+#pragma once
 #define _USE_MATH_DEFINES
 #include <catch2/catch_test_macros.hpp>
+#include <iostream> 
+#include <sstream>   
+#include <string>
+#include "../src/collision_detector.h"
 #include "../src/test_class.h"
 
 using namespace collision_detector;
