@@ -24,109 +24,123 @@ namespace test_data {
 
 	const double item_width = 0.3;
 
-	Point2D RandomXEndPos() {
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_real_distribution<double> dis_x(2, 5);
+	void AddZeroGatherer(TestClass& provider) {
+		Gatherer gatherer;
+		gatherer.width = dog_width;
 
-		return { dis_x(gen), 0 };
+		gatherer.start_pos = { 0.0, 0.0 };
+		gatherer.end_pos = { 0.0, 0.0 };
+
+		provider.SetGatherer(gatherer);
 	}
+	void AddGatherer_x(TestClass& provider) {
+		double last_x = 0.0;
+		double last_y = 0.0;
+		if (provider.GatherersCount() != 0) {
+			last_x = provider.GetGatherer(0).end_pos.x;
+			last_y = provider.GetGatherer(0).end_pos.y;
+		}
+		Gatherer gatherer;
+		gatherer.width = dog_width;
 
-	Point2D RandomYEndPos() {
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_real_distribution<double> dis_y(2, 5);
+		gatherer.start_pos = { last_x, last_y };
+		gatherer.end_pos = { last_x + 2.0, last_y };
 
-		return { 0 , dis_y(gen) };
+		Item item;
+		item.width = item_width;
+		item.position = {(gatherer.start_pos.x + gatherer.end_pos.x) / 2.0 - 0.5, last_y};
+
+		provider.SetGatherer(gatherer);
+		provider.SetItem(item);
 	}
+	void AddGatherer_y(TestClass& provider) {
+		double last_x = 0.0;
+		double last_y = 0.0;
+		if (provider.GatherersCount() != 0) {
+			last_x = provider.GetGatherer(0).start_pos.x;
+			last_y = provider.GetGatherer(0).end_pos.y;
+		}
+		Gatherer gatherer;
+		gatherer.width = dog_width;
 
-	Point2D RandomItemPos(double start_x, double end_x) {
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_real_distribution<double> dis_x(start_x + 0.5, end_x - 0.5);
+		gatherer.start_pos = { last_x, last_y};
+		gatherer.end_pos = { last_x, last_y + 4.0 };
 
-		return { dis_x(gen), 0 };
+		Item item;
+		item.width = item_width;
+		item.position = { last_x, (gatherer.start_pos.y + gatherer.end_pos.y) / 2.0 + 0.5};
+
+
+		provider.SetGatherer(gatherer);
+		provider.SetItem(item);
+	}
+	void AddGatherer_xy(TestClass& provider) {
+		double last_x = 0.0;
+		double last_y = 0.0;
+		if (provider.GatherersCount() != 0) {
+			last_x = provider.GetGatherer(0).end_pos.x;
+			last_y = provider.GetGatherer(0).end_pos.y;
+		}
+		Gatherer gatherer;
+		gatherer.width = dog_width;
+
+		gatherer.start_pos = { last_x, last_y };
+		gatherer.end_pos = { last_x + 2.0, last_y + 2.0 };
+
+		Item item;
+		item.width = item_width;
+		item.position = {(gatherer.start_pos.x + gatherer.end_pos.x) / 2.0, (gatherer.start_pos.y + gatherer.end_pos.y) / 2.0};
+
+
+		provider.SetGatherer(gatherer);
+		provider.SetItem(item);
 	}
 
 	TestClass GetTestProvider() {
-		TestClass test_provider;
+		TestClass provider;
 
-		for (int i = 0; i < 5; i++)
-		{
-			Gatherer gatherer;
-			gatherer.width = dog_width;
+		AddGatherer_xy(provider); //координаты: {0.0, 0.0} {2.0, 2.0}, item {1.0, 1.0}
+		AddGatherer_x(provider); //координаты: {2.0, 2.0} {4.0, 2.0}, item {2.5, 2.0} 
+		AddGatherer_y(provider); //координаты: {2.0, 2.0} {2.0, 6.0}, item {2.0, 4.5}
+		AddZeroGatherer(provider); //координаты: {0.0} {0.0}, no item
 
-			//три item'а, которые будут подобраны минимум тремя собаками
-			if (i % 2 == 0) {
-				Item item;
+		Gatherer gatherer;
+		gatherer.width = dog_width;
+		gatherer.start_pos = { 0.0, 2.0 }; 
+		gatherer.end_pos = { 8.0, 2.0 }; //item {3.0, 2.0} same as the second one
 
-				item.width = 0.3;
+		provider.SetGatherer(gatherer);
 
-				gatherer.start_pos = { 0, 0 };
-				gatherer.end_pos = RandomXEndPos();
-
-				item.position = RandomItemPos(gatherer.start_pos.x, gatherer.end_pos.x);
-				test_provider.SetItem(item);
-			}
-			else { //две собаки, которые не полдберут никаких объектов item
-				gatherer.start_pos = { 0, 1.0 };
-
-				gatherer.end_pos = RandomYEndPos();
-			}
-
-			test_provider.SetGatherer(gatherer);
-		}
-
-		//собака с нулевым путем
-		Gatherer zero_gatherer;
-		zero_gatherer.width = dog_width;
-		zero_gatherer.start_pos = { 0.0, 0.0 };
-		zero_gatherer.end_pos = { 0.0, 0.0 };
-
-		test_provider.SetGatherer(zero_gatherer);
-
-		return test_provider;
+		return provider;
 	}
-	/*TestClass GetTestProvider1() {
-		TestClass test_provider;
-
-		double last_pos_x = 0.0;
-		double last_pos_y = 0.0;
-
-		for (int i = 1; i < 6; i++)
-		{
-			Gatherer gatherer;
-			gatherer.width = dog_width;
-
-			Item item;
-			item.width = item_width;
-			
-			if (i % 2 == 0) {
-				gatherer.start_pos = { last_pos_x, 0.0 };
-				gatherer.end_pos = { last_pos_x + static_cast<double>(i), 0.0 };
-
-				item.position = {last_pos_x + }
-			}
-
-			gatherer.end_pos()
-
-				Item item;
-		}
-	}*/
-
 }
 
 
 SCENARIO("Collision detector") {
-
 	GIVEN("Item Gatherer Provider object") {
-		TestClass test_provider = test_data::GetTestProvider();
-		auto events = FindGatherEvents(test_provider);
+	TestClass test_provider = test_data::GetTestProvider();
+	auto events = FindGatherEvents(test_provider);
 
-		WHEN("tralala") {
-			THEN("tralala") {
-				CHECK((events.size() >= 3 && events.size() <= 6));
+
+		WHEN("There are three items and 5 different gatherers") {
+			THEN("Only 4 of gatherers are able to collect loot and there are 4 events") {
+				CHECK(events.size() == 4);
 			}
+		}
+
+		GIVEN("Vector of time in chronological order") {
+			std::vector<double> time_ = { 0.25, 0.3125, 0.5, 0.625 };
+
+
+			WHEN("There are 4 events") {
+				THEN("Events in chronological order") {
+					for (size_t i = 0; i < events.size(); i++)
+					{
+
+					}
+				}
+			}
+
 		}
 
 		//проверка, что текущее значение таймера <= следующему значению

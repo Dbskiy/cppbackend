@@ -23,7 +23,7 @@ namespace test {
 			if (idx < items_.size()) return items_[idx];
 		}
 
-		virtual size_t GatherersCount() const override {
+		size_t GatherersCount() const override {
 			return gatherers_.size();
 		}
 
