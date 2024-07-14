@@ -29,8 +29,9 @@ namespace json_loader {
         model::Game game;
         const auto& json_object = json_data.as_object();
 
-
         const auto default_speed = DefaultDogSpeed(json_object);
+        
+        model::Map::BagCapacity def_bag_capacity = DefaultBagCapacity(json_object);
 
         LootConfiguration(game, json_object);
 
@@ -39,7 +40,10 @@ namespace json_loader {
         for (const auto& map_json : all_maps) {
             model::Map::Id map_id(map_json.at("id").as_string().c_str());
             std::string name = map_json.at("name").as_string().c_str();
+            
             const auto dog_speed = DogSpeedOnTheMap(map_json.as_object(), default_speed);
+
+            const auto bag_capacity = BagCapacityOnTheMap(map_json.as_object(), def_bag_capacity);
 
             //сам массив с трофеем на конкретной карте передавать в отдельный модуль extra_data
             
@@ -51,7 +55,7 @@ namespace json_loader {
             model::Map::LootTypesProp loot_types_prop = LootTypesProperties(std::move(loot_types));
 
             //мб для properties тоже добавить insert
-            model::Map map(map_id, name, dog_speed, loot_types_num, loot_types_prop);
+            model::Map map(map_id, name, dog_speed, bag_capacity, loot_types_num, loot_types_prop);
 
             InsertRoads(map, map_json);
 
@@ -71,6 +75,14 @@ namespace json_loader {
             return model::Map::DogSpeed(json_object.at("defaultDogSpeed").as_double());
         }
         return model::Map::DogSpeed(1);
+    }
+
+    model::Map::BagCapacity DefaultBagCapacity(const json::object& json_object)
+    {
+        if (json_object.contains("defaultBagCapacity")) {
+            return model::Map::BagCapacity(json_object.at("defaultBagCapacity").as_int64());
+        }
+        return model::Map::BagCapacity(3);
     }
 
     void LootConfiguration(model::Game& game, const json::object& json_object)
@@ -96,6 +108,14 @@ namespace json_loader {
             return model::Map::DogSpeed(map_json.at("dogSpeed").as_double());
         }
         return def_speed;
+    }
+
+    model::Map::BagCapacity BagCapacityOnTheMap(const json::object& map_json, model::Map::BagCapacity def_bag_capacity)
+    {
+        if (map_json.contains("bagCapacity")) {
+            return model::Map::BagCapacity(map_json.at("bagCapacity").as_uint64());
+        }
+        return def_bag_capacity;
     }
 
     void InsertRoads(model::Map& map, const auto& map_json) {

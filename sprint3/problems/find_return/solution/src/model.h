@@ -108,17 +108,19 @@ public:
         std::random_device rd;
         std::mt19937 gen(rd());
 
-        Coord min_x, min_y, max_x, max_y;
+        double min_x, min_y, max_x, max_y;
 
         if (IsHorizontal()) {
             min_x = std::min(start_.x, end_.x);
             max_x = std::max(start_.x, end_.x);
-            min_y = max_y = start_.y;
+            min_y = start_.y - 0.4;
+            max_y = end_.y + 0.4;
         } 
         else {
             min_y = std::min(start_.y, end_.y);
             max_y = std::max(start_.y, end_.y);
-            min_x = max_x = start_.x;
+            min_x = start_.x - 0.4;
+            max_x = end_.x + 0.4;
         }
 
         std::uniform_real_distribution<double> dis_x(min_x, max_x);
@@ -178,6 +180,7 @@ private:
     public:
         using Id = util::Tagged<std::string, Map>;
         using DogSpeed = util::Tagged<double, Map>;
+        using BagCapacity = util::Tagged<unsigned, Map>;
         using Roads = std::vector<Road>;
         using Buildings = std::vector<Building>;
         using Offices = std::vector<Office>;
@@ -185,10 +188,12 @@ private:
         using loot_variant = std::variant<std::string, int64_t, double>;
         using LootTypesProp = std::vector<std::unordered_map<std::string, loot_variant>>;
 
-        Map(Id id, std::string name, DogSpeed speed, LootTypesNum loot_types_num, const LootTypesProp& loot_types_prop) noexcept
+        Map(Id id, std::string name, DogSpeed speed, BagCapacity bag_capacity,
+            LootTypesNum loot_types_num, const LootTypesProp& loot_types_prop) noexcept
             : id_(std::move(id))
             , name_(std::move(name))
             , speed_(std::move(speed))
+            , bag_capacity_(std::move(bag_capacity))
             , loot_types_num_(std::move(loot_types_num))
             , loot_types_prop_(loot_types_prop)
         {
@@ -246,6 +251,7 @@ private:
         Id id_;
         std::string name_;
         DogSpeed speed_;
+        BagCapacity bag_capacity_;
         Roads roads_;
         Buildings buildings_;
         LootTypesNum loot_types_num_;
