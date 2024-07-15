@@ -281,7 +281,15 @@ namespace app {
 
 	void GatheringAndDelivering::BringLootToTheBase(const size_t d_id)
 	{
-		dogs_[d_id]->GetDogState().bag.FreeBag();
+		auto& state = dogs_[d_id]->GetDogState();
+
+		for (const auto& loot : state.bag.dog_loot_) {
+			Map::loot_type loot_type_prop = session_->GetMap()->GetCertainLootType(loot.type_);
+			int type_value = std::get<1>(loot_type_prop["value"]);
+			state.score += type_value;
+		}
+
+		state.bag.FreeBag();
 	}
 
 	void GameTime::MoveAllPlayers(int tick)

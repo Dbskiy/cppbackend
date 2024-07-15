@@ -188,7 +188,8 @@ private:
         using Offices = std::vector<Office>;
         using LootTypesNum = util::Tagged<int, Map>;
         using loot_variant = std::variant<std::string, int64_t, double>;
-        using LootTypesProp = std::vector<std::unordered_map<std::string, loot_variant>>;
+        using loot_type = std::unordered_map<std::string, loot_variant>;
+        using LootTypesProp = std::vector<loot_type>;
 
         Map(Id id, std::string name, DogSpeed speed, BagCapacity bag_capacity,
             LootTypesNum loot_types_num, const LootTypesProp& loot_types_prop) noexcept
@@ -231,6 +232,10 @@ private:
 
         const LootTypesProp& GetLootTypesProp() const noexcept {
             return loot_types_prop_;
+        }
+
+        const loot_type& GetCertainLootType(int type) const noexcept {
+            return loot_types_prop_[type];
         }
 
         const BagCapacity& GetBagCapacity() const noexcept {
@@ -306,6 +311,8 @@ public:
             speed.Vx = 0.0;
             speed.Vy = 0.0;
         }
+
+        int score = 0;
 
     };
 

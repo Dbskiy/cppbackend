@@ -439,6 +439,8 @@ namespace http_handler {
 
                     stats["bag"] = bag;
 
+                    stats["score"] = dog_state.score;
+
                     players_json[std::to_string(pair.first)] = stats;
                 }
                 res_body["players"] = players_json;
