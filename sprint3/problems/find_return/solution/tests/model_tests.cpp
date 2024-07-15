@@ -8,7 +8,7 @@ using namespace model;
 namespace TestData {
 
 	Map::LootTypesProp prop1;
-	Map map1{ Map::Id("1"), "Test_map1", Map::DogSpeed(0.0), Map::LootTypesNum(0), prop1 };
+	Map map1{ Map::Id("1"), "Test_map1", Map::DogSpeed(0.0), Map::BagCapacity(0), Map::LootTypesNum(0), prop1 };
 	model::Road road1(model::Road::HORIZONTAL, { 0, 0 }, 40);
 
 	Map::LootTypesProp prop2 = {
@@ -26,7 +26,7 @@ namespace TestData {
 		}
 	};
 
-	Map map2{ Map::Id("2"), "Test_map2", Map::DogSpeed(0.0), Map::LootTypesNum(2), prop2 };
+	Map map2{ Map::Id("2"), "Test_map2", Map::DogSpeed(0.0), Map::BagCapacity(0), Map::LootTypesNum(2), prop2 };
 	model::Road road2(model::Road::VERTICAL, { 40, 0 }, 30);
 }
 
@@ -101,7 +101,8 @@ SCENARIO("Model", "[Model]") {
 				auto start = TestData::road2.GetStart();
 				auto end = TestData::road2.GetEnd();
 
-				CHECK(loot_1.pos_.x == start.x);
+				CHECK((loot_1.pos_.x >= (start.x - 0.4) && loot_1.pos_.x <= (end.x + 0.4)));
+
 				CHECK((loot_1.pos_.y >= start.y && loot_1.pos_.y <= end.y));
 			}
 		}

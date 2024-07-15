@@ -42,8 +42,10 @@ struct Position {
 };
 
 struct Loot {
+    int id;
     int type_{};
     Position pos_;
+    bool is_collected_ = false;
 };
 
 class Road {
@@ -180,7 +182,7 @@ private:
     public:
         using Id = util::Tagged<std::string, Map>;
         using DogSpeed = util::Tagged<double, Map>;
-        using BagCapacity = util::Tagged<unsigned, Map>;
+        using BagCapacity = util::Tagged<size_t, Map>;
         using Roads = std::vector<Road>;
         using Buildings = std::vector<Building>;
         using Offices = std::vector<Office>;
@@ -231,6 +233,10 @@ private:
             return loot_types_prop_;
         }
 
+        const BagCapacity& GetBagCapacity() const noexcept {
+            return bag_capacity_;
+        }
+
         void AddRoad(const Road& road) {
             roads_.emplace_back(road);
 
@@ -274,10 +280,27 @@ public:
         state_.position = spawn_point;
     };
 
+    struct Bag {
+
+        bool isBagFull(const Map::BagCapacity& bag_capacity) const noexcept {
+            return dog_loot_.size() == *bag_capacity;
+        }
+
+        void FreeBag() {
+            dog_loot_.clear();
+            dog_loot_.shrink_to_fit();
+        }
+
+        std::vector<Loot> dog_loot_;
+    };
+
     struct DogState {
+        Position prev_position;
         Position position;
         Speed speed;
         std::string direction = "U";
+
+        Bag bag;
 
         void SetDefaultSpeed() {
             speed.Vx = 0.0;
@@ -316,7 +339,7 @@ public:
 
     explicit GameSession(Map* map) : map_(map) {};
 
-    const Dogs& GetDogs() const noexcept {
+    Dogs& GetDogs() {
         return dogs_;
     }
 
@@ -337,11 +360,22 @@ public:
 
             loot.type_ = GenerateRandomLootType();
 
+            loot.id = all_loot_.size();
+
             all_loot_.emplace_back(loot);
         }
     }
 
-    const AllLoot& GetAllLoot() const noexcept {
+    void RemoveCollectedLoot() {
+        for (auto it = all_loot_.begin(); it != all_loot_.end(); ) {
+            if (it->is_collected_) {
+                it = all_loot_.erase(it);
+            }
+            else ++it;
+        }
+    }
+
+    AllLoot& GetAllLoot() {
         return all_loot_;
     }
 

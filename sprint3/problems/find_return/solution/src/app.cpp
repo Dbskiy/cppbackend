@@ -122,6 +122,167 @@ namespace app {
 		return "{}"sv;
 	}
 
+	void GatheringAndDelivering::GatherAndDeliver()
+	{
+
+		GathererProvider gatherer_provider = GetGathererProvider();
+		DelivererProvider deliverier_provider = GetDelivererProvider();
+
+		std::vector<GatheringEvent> g_events = FindGatherEvents(gatherer_provider);
+		std::vector<DeliveringEvent> d_events = FindDeliveringEvents(deliverier_provider);
+
+		SetCorrectChronology(g_events, d_events, dogs_);
+
+		size_t i = 0, j = 0;
+
+		//алгоритм добавления лута:
+		//Проверка, что события еще не было. Затем, что в сумке есть место, потом добавляем лут в сумку
+		//после цикла произвести отчистку вектора предметов
+
+		while (true) {
+			if (i < g_events.size() && j < d_events.size()) {
+				if (g_events[i].time == d_events[j].time) {
+					//очищаем сумку, а затем добавляем лут (необязательно тому же игроку)
+
+					BringLootToTheBase(d_events[j].deliverer_id);
+					PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
+
+					++i;
+					++j;
+				}
+				else if (g_events[i].time < d_events[j].time) {
+					PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
+					++i;
+				}
+				else {
+					BringLootToTheBase(d_events[j].deliverer_id);
+					++j;
+				}
+			}
+			else if (i < g_events.size()) {
+				PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
+				++i;
+			}
+			else if (j < d_events.size()) {
+				BringLootToTheBase(d_events[j].deliverer_id);
+				++j;
+			}
+			else {
+				break;
+			}
+		}
+
+		//функция по очистке вектора с лутом
+		session_->RemoveCollectedLoot();
+
+	}
+
+	GathererProvider GatheringAndDelivering::GetGathererProvider()
+	{
+		GathererProvider provider;
+
+		for (const auto& loot : all_loot_) {
+			Item item;
+			item.position.x = loot.pos_.x;
+			item.position.y = loot.pos_.y;
+
+			provider.SetItem(item);
+		}
+
+		for (const auto& dog : dogs_) {
+			const auto& state = dog->GetDogState();
+			Gatherer gatherer;
+
+			gatherer.start_pos.x = state.prev_position.x;
+			gatherer.start_pos.y = state.prev_position.y;
+
+			gatherer.end_pos.x = state.position.x;
+			gatherer.end_pos.y = state.position.y;
+
+			provider.SetGatherer(gatherer);
+		}
+
+		return provider;
+		
+	}
+
+	DelivererProvider GatheringAndDelivering::GetDelivererProvider()
+	{
+		DelivererProvider provider;
+
+		for (const auto& office : offices_) {
+			Base base;
+
+			base.position.x = office.GetPosition().x;
+			base.position.y = office.GetPosition().y;
+
+			provider.SetBase(base);
+		}
+
+		for (const auto& dog : dogs_) {
+			const auto& state = dog->GetDogState();
+			Gatherer deliverer;
+
+			deliverer.start_pos.x = state.prev_position.x;
+			deliverer.start_pos.y = state.prev_position.y;
+
+			deliverer.end_pos.x = state.position.x;
+			deliverer.end_pos.y = state.position.y;
+
+			provider.SetDeliverer(deliverer);
+		}
+
+		return provider;
+	}
+
+	void GatheringAndDelivering::SetCorrectChronology(std::vector<GatheringEvent>& g_events, std::vector<DeliveringEvent>& d_events, const GameSession::Dogs& dogs) const
+	{
+
+		for (auto& g_event : g_events) {
+			auto& state = dogs[g_event.gatherer_id]->GetDogState();
+
+			double distance_x = state.position.x - state.prev_position.x;
+			double distance_y = state.position.y - state.prev_position.y;
+
+			double cur_distance = std::sqrt(distance_x * distance_x + distance_y * distance_y);
+
+			g_event.time = cur_distance / max_distance_;
+		}
+
+		std::sort(g_events.begin(), g_events.end(), [](const GatheringEvent& l, const GatheringEvent& r) {
+			return l.time < r.time;
+			});
+
+		for (auto& d_event : d_events) {
+			auto& state = dogs[d_event.deliverer_id]->GetDogState();
+
+			double distance_x = state.position.x - state.prev_position.x;
+			double distance_y = state.position.y - state.prev_position.y;
+
+			double cur_distance = std::sqrt(distance_x * distance_x + distance_y * distance_y);
+
+			d_event.time = cur_distance / max_distance_;
+		}
+
+		std::sort(d_events.begin(), d_events.end(), [](const DeliveringEvent& l, const DeliveringEvent& r) {
+			return l.time < r.time;
+			});
+	}
+
+	void GatheringAndDelivering::PutInTheBag(const size_t g_id, const size_t loot_id)
+	{
+		if (!all_loot_[loot_id].is_collected_ && !dogs_[g_id]->GetDogState().bag.isBagFull(bag_capacity_)) {
+
+			all_loot_[loot_id].is_collected_ = true;
+
+			dogs_[g_id]->GetDogState().bag.dog_loot_.push_back(all_loot_[loot_id]);
+		}
+	}
+
+	void GatheringAndDelivering::BringLootToTheBase(const size_t d_id)
+	{
+		dogs_[d_id]->GetDogState().bag.FreeBag();
+	}
 
 	void GameTime::MoveAllPlayers(int tick)
 	{
@@ -151,11 +312,22 @@ namespace app {
 		}
 	}
 
+	void GameTime::GatheringAndDeliviring(int tick)
+	{
+		for (auto& session : game_.GetSessions()) {
+			GatheringAndDelivering gath_and_del(session, tick);
+
+			gath_and_del.GatherAndDeliver();
+		}
+	}
+
 	void GameTime::ChangeCoordinates(const Map* map, Dog::DogState& state, int tick) const
 	{
 		const double ms_to_s = 1000.0;
 
 		std::vector<Road> available_roads = map->FindRoadsAt(state.position.x, state.position.y);
+
+		auto cur_pos = state.position;
 
 		if (!available_roads.empty()) {
 			state.position.x += state.speed.Vx * static_cast<double>(tick) / ms_to_s;
@@ -195,7 +367,7 @@ namespace app {
 			}
 		}
 
-
+		state.prev_position = cur_pos;
 	}
 
 	void GameTime::PointXOutOfRoad(Dog::DogState& state, int start_x, int end_x) const
@@ -248,6 +420,8 @@ namespace app {
 	{
 		game_time_.MoveAllPlayers(tick);
 		game_time_.GenerateLoot(tick);
+		game_time_.GatheringAndDeliviring(tick);
 	}
 }
 
+	

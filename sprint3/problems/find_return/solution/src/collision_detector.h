@@ -23,13 +23,18 @@ CollectionResult TryCollectPoint(geom::Point2D a, geom::Point2D b, geom::Point2D
 
 struct Item {
     geom::Point2D position;
-    double width;
+    const double width = 0.0;
+};
+
+struct Base {
+    geom::Point2D position;
+    const double width = 0.5;
 };
 
 struct Gatherer {
     geom::Point2D start_pos;
     geom::Point2D end_pos;
-    double width;
+    const double width = 0.6;
 };
 
 class ItemGathererProvider {
@@ -43,6 +48,17 @@ public:
     virtual Gatherer GetGatherer(size_t idx) const = 0;
 };
 
+class ItemsDelivererProvider {
+protected:
+    ~ItemsDelivererProvider() = default;
+
+public:
+    virtual size_t BasesCount() const = 0;
+    virtual Base GetBase(size_t idx) const = 0;
+    virtual size_t DeliverersCount() const = 0;
+    virtual Gatherer GetDeliverer(size_t idx) const = 0;
+};
+
 struct GatheringEvent {
     size_t item_id;
     size_t gatherer_id;
@@ -50,6 +66,15 @@ struct GatheringEvent {
     double time;
 };
 
+struct DeliveringEvent {
+    size_t base_id;
+    size_t deliverer_id;
+    double sq_distance;
+    double time;
+};
+
 std::vector<GatheringEvent> FindGatherEvents(const ItemGathererProvider& provider);
+std::vector<DeliveringEvent> FindDeliveringEvents(const ItemsDelivererProvider& provider);
+
 
 }  // namespace collision_detector

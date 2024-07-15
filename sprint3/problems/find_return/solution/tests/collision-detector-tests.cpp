@@ -8,13 +8,14 @@
 #include <sstream>   
 #include <string>
 #include <algorithm>
+#include <random>
 
 #include "../src/collision_detector.h"
-#include "../src/test_class.h"
+#include "../src/providers.h"
 
 
 using namespace collision_detector;
-using namespace test;
+using namespace providers;
 using Catch::Matchers::Contains;
 using Catch::Matchers::Predicate;
 
@@ -73,10 +74,6 @@ namespace my_matcher {
 namespace test_data {
 	using namespace geom;
 
-	const double dog_width = 0.6;
-
-	const double item_width = 0.3;
-
 	Point2D RandomItemPos(Point2D start, Point2D end) {
 		std::random_device rd;
 		std::mt19937 gen(rd());
@@ -86,15 +83,15 @@ namespace test_data {
 		return { point, point};
 	}
 
-	TestClass GetRandomItemTestProvider() {
-		TestClass test_provider;
+	GathererProvider GetRandomItemTestProvider() {
+		GathererProvider test_provider;
 
 		Point2D last_pos = { 0, 0 };
 
 		for (int i = 0; i < 3; i++)
 		{
-			Gatherer gatherer = { .start_pos = last_pos, .end_pos = {last_pos.x + 2.0, last_pos.y + 2.0}, .width = dog_width };
-			Item item = { .position = RandomItemPos(gatherer.start_pos, gatherer.end_pos), .width = item_width };
+			Gatherer gatherer = { .start_pos = last_pos, .end_pos = {last_pos.x + 2.0, last_pos.y + 2.0} };
+			Item item = { .position = RandomItemPos(gatherer.start_pos, gatherer.end_pos) };
 
 			last_pos.x += 2.0;
 			last_pos.y += 2.0;
@@ -103,18 +100,17 @@ namespace test_data {
 			test_provider.SetItem(item);
 		}
 
-		Gatherer cross_gatherer = { .start_pos = {1.0, 1.0}, .end_pos = {3.0, 3.0}, .width = dog_width };
+		Gatherer cross_gatherer = { .start_pos = {1.0, 1.0}, .end_pos = {3.0, 3.0} };
 
 		test_provider.SetGatherer(cross_gatherer);
 
-		Item item = { .position = {5.3534, 5.3534}, .width = item_width };
+		Item item = { .position = {5.3534, 5.3534} };
 
 		return test_provider;
 	}
 
-	void AddZeroGatherer(TestClass& provider) {
+	void AddZeroGatherer(GathererProvider& provider) {
 		Gatherer gatherer;
-		gatherer.width = dog_width;
 
 		gatherer.start_pos = { 0.0, 0.0 };
 		gatherer.end_pos = { 0.0, 0.0 };
@@ -122,7 +118,7 @@ namespace test_data {
 		provider.SetGatherer(gatherer);
 	}
 
-	void AddGatherer_x(TestClass& provider) {
+	void AddGatherer_x(GathererProvider& provider) {
 		double last_x = 0.0;
 		double last_y = 0.0;
 		if (provider.GatherersCount() != 0) {
@@ -130,19 +126,17 @@ namespace test_data {
 			last_y = provider.GetGatherer(0).end_pos.y;
 		}
 		Gatherer gatherer;
-		gatherer.width = dog_width;
 
 		gatherer.start_pos = { last_x, last_y };
 		gatherer.end_pos = { last_x + 2.0, last_y };
 
 		Item item;
-		item.width = item_width;
 		item.position = {(gatherer.start_pos.x + gatherer.end_pos.x) / 2.0 - 0.5, last_y};
 
 		provider.SetGatherer(gatherer);
 		provider.SetItem(item);
 	}
-	void AddGatherer_y(TestClass& provider) {
+	void AddGatherer_y(GathererProvider& provider) {
 		double last_x = 0.0;
 		double last_y = 0.0;
 		if (provider.GatherersCount() != 0) {
@@ -150,20 +144,18 @@ namespace test_data {
 			last_y = provider.GetGatherer(0).end_pos.y;
 		}
 		Gatherer gatherer;
-		gatherer.width = dog_width;
 
 		gatherer.start_pos = { last_x, last_y};
 		gatherer.end_pos = { last_x, last_y + 2.0 };
 
 		Item item;
-		item.width = item_width;
 		item.position = { last_x, (gatherer.start_pos.y + gatherer.end_pos.y) / 2.0 + 0.25};
 
 
 		provider.SetGatherer(gatherer);
 		provider.SetItem(item);
 	}
-	void AddGatherer_xy(TestClass& provider) {
+	void AddGatherer_xy(GathererProvider& provider) {
 		double last_x = 0.0;
 		double last_y = 0.0;
 		if (provider.GatherersCount() != 0) {
@@ -171,13 +163,11 @@ namespace test_data {
 			last_y = provider.GetGatherer(0).end_pos.y;
 		}
 		Gatherer gatherer;
-		gatherer.width = dog_width;
 
 		gatherer.start_pos = { last_x, last_y };
 		gatherer.end_pos = { last_x + 2.0, last_y + 2.0 };
 
 		Item item;
-		item.width = item_width;
 		item.position = {(gatherer.start_pos.x + gatherer.end_pos.x) / 2.0, (gatherer.start_pos.y + gatherer.end_pos.y) / 2.0};
 
 
@@ -185,19 +175,19 @@ namespace test_data {
 		provider.SetItem(item);
 	}
 
-	TestClass GetBadTestProvider1() {
-		TestClass provider;
+	GathererProvider GetBadTestProvider1() {
+		GathererProvider provider;
 
 		AddZeroGatherer(provider);
 
-		Gatherer gatherer1 = { .start_pos = { 10.0, 10.0 }, .end_pos = { 12.0, 12.0 }, .width = dog_width };
+		Gatherer gatherer1 = { .start_pos = { 10.0, 10.0 }, .end_pos = { 12.0, 12.0 } };
 
-		Item item1 = { .position = {12.5, 12.5}, .width = item_width };
+		Item item1 = { .position = {12.5, 12.5} };
 
-		Gatherer gatherer2 = { .start_pos = {5.5, 5.5}, .end_pos = {7.5, 5.5}, .width = dog_width };
-		Item item2 = { .position = {2.2, 2.2}, .width = item_width };
+		Gatherer gatherer2 = { .start_pos = {5.5, 5.5}, .end_pos = {7.5, 5.5} };
+		Item item2 = { .position = {2.2, 2.2} };
 
-		Gatherer gatherer3 = { .start_pos = {1.0, 1.0}, .end_pos = {1.0, 3.0}, .width = dog_width };
+		Gatherer gatherer3 = { .start_pos = {1.0, 1.0}, .end_pos = {1.0, 3.0} };
 
 
 		provider.SetGatherer(gatherer1);
@@ -210,8 +200,8 @@ namespace test_data {
 		return provider;
 	}
 
-	TestClass GetTestProvider() {
-		TestClass provider;
+	GathererProvider GetTestProvider() {
+		GathererProvider provider;
 
 		AddGatherer_xy(provider); //координаты: {0.0, 0.0} {2.0, 2.0}, item {1.0, 1.0}
 		AddGatherer_x(provider); //координаты: {2.0, 2.0} {4.0, 2.0}, item {2.5, 2.0} 
@@ -219,7 +209,6 @@ namespace test_data {
 		AddZeroGatherer(provider); //координаты: {0.0} {0.0}, no item
 		// {0.25, 0.3125, 0.5, 0.625 } //2,5,1,3
 		Gatherer gatherer;
-		gatherer.width = dog_width;
 		gatherer.start_pos = { 1.875, 2.0 }; 
 		gatherer.end_pos = { 3.875, 2.0 }; //item {2.5, 2.0} same as the second one
 
@@ -236,16 +225,16 @@ SCENARIO("Collision detector") {
 	using namespace my_matcher;
 
 	auto between_zero_and_one = [](double x) {
-		return (x > 0 && x < 1);
+		return (x >= 0 && x <= 1);
 		};
 
 	auto less_or_equal_to_width_sum = [](double x) {
-		return (sqrt(x) <= dog_width + item_width);
+		return (sqrt(x) <= 0.6 + 0);
 		};
 
 
 	GIVEN("Bad Item Gatherer Provider object with all non-movable gatherers") {
-		TestClass bad_provider = GetBadTestProvider1();
+		GathererProvider bad_provider = GetBadTestProvider1();
 		auto events = FindGatherEvents(bad_provider);
 
 		WHEN("There are 4 different gatherers and 2 items that can't be collected") {
@@ -256,7 +245,7 @@ SCENARIO("Collision detector") {
 	}
 
 	GIVEN("Item Gatherer Provider with random items") {
-		TestClass provider = GetRandomItemTestProvider();
+		GathererProvider provider = GetRandomItemTestProvider();
 		auto events = FindGatherEvents(provider);
 
 		WHEN("There are 4 different gatherers and 4 different items") {
@@ -303,7 +292,7 @@ SCENARIO("Collision detector") {
 	}
 
 	GIVEN("Correct Item Gatherer Provider object") {
-		TestClass test_provider = GetTestProvider();
+		GathererProvider test_provider = GetTestProvider();
 		auto events = FindGatherEvents(test_provider);
 
 

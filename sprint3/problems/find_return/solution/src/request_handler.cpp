@@ -412,18 +412,32 @@ namespace http_handler {
                 //Состояние игроков
                 for (const auto& pair : game_state->GetPlayersState()) {
 
+                    auto& dog_state = pair.second;
                     json::object stats;
+
                     json::array position;
-                    position.push_back(pair.second.position.x);
-                    position.push_back(pair.second.position.y);
+                    position.push_back(dog_state.position.x);
+                    position.push_back(dog_state.position.y);
 
                     json::array speed;
-                    speed.push_back(pair.second.speed.Vx);
-                    speed.push_back(pair.second.speed.Vy);
+                    speed.push_back(dog_state.speed.Vx);
+                    speed.push_back(dog_state.speed.Vy);
 
                     stats["pos"] = position;
                     stats["speed"] = speed;
-                    stats["dir"] = pair.second.direction;
+                    stats["dir"] = dog_state.direction;
+
+                    json::array bag;
+
+                    for (auto& loot : dog_state.bag.dog_loot_) {
+                        json::object loot_state;
+                        loot_state["id"] = loot.id;
+                        loot_state["type"] = loot.type_;
+
+                        bag.push_back(loot_state);
+                    }
+
+                    stats["bag"] = bag;
 
                     players_json[std::to_string(pair.first)] = stats;
                 }
@@ -444,7 +458,6 @@ namespace http_handler {
 
                     lost_objects[std::to_string(pair.first)] = lost_object;
                 }
-                
                 res_body["lostObjects"] = lost_objects;
 
                 return MakeStringResponse(http::status::ok, json::serialize(res_body), req.version(), content_type);

@@ -10,12 +10,15 @@
 #include <unordered_set>
 #include "model.h"
 #include "loot_generator.h"
+#include "providers.h"
 
 
 namespace beast = boost::beast;
 namespace http = beast::http;
 
 using namespace model;
+using namespace providers;
+
 namespace detail {
     struct TokenTag {};  
 }
@@ -227,6 +230,39 @@ namespace app {
         Players& players_;
     };
 
+    class GatheringAndDelivering {
+    public:
+        GatheringAndDelivering(std::shared_ptr<GameSession> session, int tick) : 
+            session_(session), 
+            dogs_(session->GetDogs()), 
+            offices_(session->GetMap()->GetOffices()),
+            all_loot_(session->GetAllLoot()),
+            bag_capacity_(session->GetMap()->GetBagCapacity()),
+            max_distance_(*session_->GetMap()->GetDogSpeed()* static_cast<double>(tick) / ms_to_s) {};
+
+        void GatherAndDeliver();
+
+    private:
+
+        GathererProvider GetGathererProvider();
+        DelivererProvider GetDelivererProvider();
+
+        void SetCorrectChronology(std::vector<GatheringEvent>& g_events, std::vector<DeliveringEvent>& d_events,
+            const GameSession::Dogs& dogs) const;
+
+        void PutInTheBag(const size_t g_id, const size_t loot_id);
+        void BringLootToTheBase(const size_t d_id);
+
+        std::shared_ptr<GameSession> session_;
+        GameSession::Dogs& dogs_;
+        const Map::Offices& offices_;
+        GameSession::AllLoot& all_loot_;
+
+        const double ms_to_s = 1000.0;
+        Map::BagCapacity bag_capacity_;
+        const double max_distance_;
+
+    };
 
     class GameTime {
     public:
@@ -235,6 +271,8 @@ namespace app {
         void MoveAllPlayers(int tick);
 
         void GenerateLoot(int tick);
+
+        void GatheringAndDeliviring(int tick);
 
     private:
         Game& game_;

@@ -40,7 +40,7 @@ std::vector<GatheringEvent> FindGatherEvents(
             Item item = provider.GetItem(i);
             auto result = TryCollectPoint(gatherer.start_pos, gatherer.end_pos, item.position);
 
-            if (result.IsCollected(gatherer.width + item.width)) {
+            if (result.IsCollected((gatherer.width + item.width) / 2)) {
                 GatheringEvent event{ .item_id = i,
                                       .gatherer_id = g,
                                       .sq_distance = result.sq_distance,
@@ -56,5 +56,37 @@ std::vector<GatheringEvent> FindGatherEvents(
         });
 
     return events;
+}
+std::vector<DeliveringEvent> FindDeliveringEvents(const ItemsDelivererProvider& provider)
+{
+    std::vector<DeliveringEvent> events;
+    for (size_t d = 0; d < provider.DeliverersCount(); d++) {
+        Gatherer deliverer = provider.GetDeliverer(d);
+
+        if ((deliverer.start_pos.x == deliverer.end_pos.x) && (deliverer.start_pos.y == deliverer.end_pos.y)) {
+            continue;
+        }
+
+        for (size_t b = 0; b < provider.BasesCount(); b++)
+        {
+            Base base = provider.GetBase(d);
+            auto result = TryCollectPoint(deliverer.start_pos, deliverer.end_pos, base.position);
+
+            if (result.IsCollected((deliverer.width + base.width) / 2)) {
+                DeliveringEvent event{ .base_id = d,
+                                      .deliverer_id = d,
+                                      .sq_distance = result.sq_distance,
+                                      .time = result.proj_ratio };
+                events.push_back(event);
+            }
+        }
+    }
+
+    std::sort(events.begin(), events.end(), [](const DeliveringEvent& l, const DeliveringEvent& r) {
+        return l.time < r.time;
+        });
+
+    return events;
+
 }
 }  // namespace collision_detector
