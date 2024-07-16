@@ -67,7 +67,6 @@ struct GatheringEvent {
 };
 
 struct DeliveringEvent {
-    size_t base_id;
     size_t deliverer_id;
     double sq_distance;
     double time;

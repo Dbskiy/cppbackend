@@ -3,13 +3,9 @@
 #include <fstream>
 #include <string>
 
-//проверить as_object()
 namespace json_loader {
 
     model::Game LoadGame(const std::filesystem::path& json_path) {
-        // Загрузить содержимое файла json_path, например, в виде строки
-        // Распарсить строку как JSON, используя boost::json::parse
-        // Загрузить модель игры из файла
         using namespace loot_extra_data;
 
         std::ifstream f_map(json_path);
@@ -45,16 +41,12 @@ namespace json_loader {
 
             const auto bag_capacity = BagCapacityOnTheMap(map_json.as_object(), def_bag_capacity);
 
-            //сам массив с трофеем на конкретной карте передавать в отдельный модуль extra_data
-            
-            //добавить количество типов трофеев на карте
             json::array loot_types = map_json.at("lootTypes").as_array();
 
             model::Map::LootTypesNum loot_types_num(loot_types.size());
 
             model::Map::LootTypesProp loot_types_prop = LootTypesProperties(std::move(loot_types));
 
-            //мб для properties тоже добавить insert
             model::Map map(map_id, name, dog_speed, bag_capacity, loot_types_num, loot_types_prop);
 
             InsertRoads(map, map_json);

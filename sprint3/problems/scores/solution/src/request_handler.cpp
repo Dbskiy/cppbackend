@@ -9,7 +9,6 @@ namespace http_handler {
 		response.body() = body;
 		response.content_length(body.size());
 		return response;
-
 	}
 
     FileResponse StaticFileResponseBody(fs::path& static_file_path, std::string_view content_type, unsigned http_version)
@@ -102,9 +101,6 @@ namespace http_handler {
             }
         }
         else if (config_file_path.find("/api/v1/game") != std::string::npos) {
-
-            //std::string_view content_type = req.find(http::field::content_type)->value();
-
             if (config_file_path.find("join") != std::string::npos) {
                 response = JoinGame(req, content_type);
             }
@@ -395,6 +391,67 @@ namespace http_handler {
         }, req, content_type);
     }
 
+    json::object ApiHandler::GetJsonPlayersState(const std::unordered_map<std::uint64_t, Dog::DogState>& players_state)
+    {
+        json::object players_json;
+
+        //Состояние игроков
+        for (const auto& pair : players_state) {
+
+            auto& dog_state = pair.second;
+            json::object stats;
+
+            json::array position;
+            position.push_back(dog_state.position.x);
+            position.push_back(dog_state.position.y);
+
+            json::array speed;
+            speed.push_back(dog_state.speed.Vx);
+            speed.push_back(dog_state.speed.Vy);
+
+            stats["pos"] = position;
+            stats["speed"] = speed;
+            stats["dir"] = dog_state.direction;
+
+            json::array bag;
+
+            for (auto& loot : dog_state.bag.dog_loot_) {
+                json::object loot_state;
+                loot_state["id"] = loot.id;
+                loot_state["type"] = loot.type_;
+
+                bag.push_back(loot_state);
+            }
+
+            stats["bag"] = bag;
+
+            stats["score"] = dog_state.score;
+
+            players_json[std::to_string(pair.first)] = stats;
+        }
+        return players_json;
+    }
+
+    json::object ApiHandler::GetJsonLootState(const std::unordered_map<int, Loot>& loot_state)
+    {
+        json::object lost_objects;
+
+        for (const auto& pair : loot_state) {
+            json::object lost_object;
+            json::array coord;
+
+            lost_object["type"] = pair.second.type_;
+
+            coord.push_back(pair.second.pos_.x);
+            coord.push_back(pair.second.pos_.y);
+
+            lost_object["pos"] = coord;
+
+            lost_objects[std::to_string(pair.first)] = lost_object;
+        }
+        return lost_objects;
+    }
+
     StringResponse ApiHandler::GetState(const StringRequest& req, const std::string_view content_type)
     {
         if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::GET_HEAD, req.version(), content_type)) {
@@ -407,60 +464,10 @@ namespace http_handler {
 
             if (game_state) {
                 json::object res_body;
-                json::object players_json;
 
-                //Состояние игроков
-                for (const auto& pair : game_state->GetPlayersState()) {
+                res_body["players"] = GetJsonPlayersState(game_state->GetPlayersState());
 
-                    auto& dog_state = pair.second;
-                    json::object stats;
-
-                    json::array position;
-                    position.push_back(dog_state.position.x);
-                    position.push_back(dog_state.position.y);
-
-                    json::array speed;
-                    speed.push_back(dog_state.speed.Vx);
-                    speed.push_back(dog_state.speed.Vy);
-
-                    stats["pos"] = position;
-                    stats["speed"] = speed;
-                    stats["dir"] = dog_state.direction;
-
-                    json::array bag;
-
-                    for (auto& loot : dog_state.bag.dog_loot_) {
-                        json::object loot_state;
-                        loot_state["id"] = loot.id;
-                        loot_state["type"] = loot.type_;
-
-                        bag.push_back(loot_state);
-                    }
-
-                    stats["bag"] = bag;
-
-                    stats["score"] = dog_state.score;
-
-                    players_json[std::to_string(pair.first)] = stats;
-                }
-                res_body["players"] = players_json;
-
-                json::object lost_objects;
-                
-                for (const auto& pair : game_state->GetLootState()) {
-                    json::object lost_object;
-                    json::array coord;
-
-                    lost_object["type"] = pair.second.type_;
-                    
-                    coord.push_back(pair.second.pos_.x);
-                    coord.push_back(pair.second.pos_.y);
-
-                    lost_object["pos"] = coord;
-
-                    lost_objects[std::to_string(pair.first)] = lost_object;
-                }
-                res_body["lostObjects"] = lost_objects;
+                res_body["lostObjects"] = GetJsonLootState(game_state->GetLootState());
 
                 return MakeStringResponse(http::status::ok, json::serialize(res_body), req.version(), content_type);
             }

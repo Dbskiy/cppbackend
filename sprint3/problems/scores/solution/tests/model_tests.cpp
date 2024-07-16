@@ -48,7 +48,6 @@ SCENARIO("Model", "[Model]") {
 		WHEN("There is one road and no loot types") {
 			map1.AddRoad(TestData::road1);
 			REQUIRE(map1.GetRoads().size() == 1);
-
 			THEN("No loot will be added to the session") {
 				CHECK(session.GetAllLoot().size() == 0);
 			}
@@ -61,7 +60,6 @@ SCENARIO("Model", "[Model]") {
 
 		WHEN("There are no roads to generate loot") {
 			CHECK(map2.GetRoads().size() == 0);
-
 			THEN("No loot will be added to the session") {
 				CHECK(session.GetAllLoot().size() == 0);
 			}

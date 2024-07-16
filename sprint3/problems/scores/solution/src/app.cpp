@@ -135,15 +135,9 @@ namespace app {
 
 		size_t i = 0, j = 0;
 
-		//алгоритм добавления лута:
-		//Проверка, что события еще не было. Затем, что в сумке есть место, потом добавляем лут в сумку
-		//после цикла произвести отчистку вектора предметов
-
 		while (true) {
 			if (i < g_events.size() && j < d_events.size()) {
 				if (g_events[i].time == d_events[j].time) {
-					//очищаем сумку, а затем добавляем лут (необязательно тому же игроку)
-
 					BringLootToTheBase(d_events[j].deliverer_id);
 					PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
 
@@ -172,9 +166,7 @@ namespace app {
 			}
 		}
 
-		//функция по очистке вектора с лутом
 		session_->RemoveCollectedLoot();
-
 	}
 
 	GathererProvider GatheringAndDelivering::GetGathererProvider()
@@ -235,9 +227,9 @@ namespace app {
 		return provider;
 	}
 
-	void GatheringAndDelivering::SetCorrectChronology(std::vector<GatheringEvent>& g_events, std::vector<DeliveringEvent>& d_events, const GameSession::Dogs& dogs) const
-	{
-
+	void GatheringAndDelivering::SetCorrectChronology(std::vector<GatheringEvent>& g_events, 
+		std::vector<DeliveringEvent>& d_events, const GameSession::Dogs& dogs) const
+	{ 
 		for (auto& g_event : g_events) {
 			auto& state = dogs[g_event.gatherer_id]->GetDogState();
 

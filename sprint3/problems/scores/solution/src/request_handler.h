@@ -137,6 +137,10 @@ private:
     
     StringResponse PlayerAction(const StringRequest&, const std::string_view);
 
+    json::object GetJsonPlayersState(const std::unordered_map<std::uint64_t, Dog::DogState>& players_state);
+
+    json::object GetJsonLootState(const std::unordered_map<int, Loot>& loot_state);
+
     StringResponse GetState(const StringRequest&, const std::string_view);
 
     StringResponse TimeControl(const StringRequest&, const std::string_view);

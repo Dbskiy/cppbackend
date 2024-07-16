@@ -13,7 +13,6 @@ add_library(MyLib STATIC
 	src/collision_detector.h
 	src/collision_detector.cpp
 	src/providers.h
-	src/providers.cpp
 	src/model.h
 	src/model.cpp
 	src/loot_generator.h

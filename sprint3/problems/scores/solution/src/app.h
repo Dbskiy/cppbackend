@@ -238,7 +238,7 @@ namespace app {
             offices_(session->GetMap()->GetOffices()),
             all_loot_(session->GetAllLoot()),
             bag_capacity_(session->GetMap()->GetBagCapacity()),
-            max_distance_(*session_->GetMap()->GetDogSpeed()* static_cast<double>(tick) / ms_to_s) {};
+            max_distance_(*session->GetMap()->GetDogSpeed() * static_cast<double>(tick) / ms_to_s) {};
 
         void GatherAndDeliver();
 

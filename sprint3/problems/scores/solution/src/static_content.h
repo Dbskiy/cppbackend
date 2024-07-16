@@ -15,7 +15,6 @@ namespace static_content {
 
     std::string URL_encode(const std::string&);
 
-
     std::string URL_decode(std::string_view);
 
     bool IsSubPath(fs::path, fs::path);

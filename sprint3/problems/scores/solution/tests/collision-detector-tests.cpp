@@ -21,11 +21,7 @@ using Catch::Matchers::Predicate;
 
 namespace Catch {
 
-	using namespace geom;
 
-	const double dog_width = 0.6;
-
-	const double item_width = 0.3;
 	template<>
 	struct StringMaker<collision_detector::GatheringEvent> {
 		static std::string convert(collision_detector::GatheringEvent const& value) {
@@ -73,6 +69,10 @@ namespace my_matcher {
 
 namespace test_data {
 	using namespace geom;
+
+	const double dog_width = 0.6;
+
+	const double item_width = 0.0;
 
 	Point2D RandomItemPos(Point2D start, Point2D end) {
 		std::random_device rd;
@@ -203,14 +203,13 @@ namespace test_data {
 	GathererProvider GetTestProvider() {
 		GathererProvider provider;
 
-		AddGatherer_xy(provider); //координаты: {0.0, 0.0} {2.0, 2.0}, item {1.0, 1.0}
-		AddGatherer_x(provider); //координаты: {2.0, 2.0} {4.0, 2.0}, item {2.5, 2.0} 
-		AddGatherer_y(provider); //координаты: {2.0, 2.0}, {2.0, 4.0}, item {2.0, 3.25}
-		AddZeroGatherer(provider); //координаты: {0.0} {0.0}, no item
-		// {0.25, 0.3125, 0.5, 0.625 } //2,5,1,3
+		AddGatherer_xy(provider); 
+		AddGatherer_x(provider);  
+		AddGatherer_y(provider); 
+		AddZeroGatherer(provider);
 		Gatherer gatherer;
 		gatherer.start_pos = { 1.875, 2.0 }; 
-		gatherer.end_pos = { 3.875, 2.0 }; //item {2.5, 2.0} same as the second one
+		gatherer.end_pos = { 3.875, 2.0 };
 
 		provider.SetGatherer(gatherer);
 
@@ -228,8 +227,8 @@ SCENARIO("Collision detector") {
 		return (x >= 0 && x <= 1);
 		};
 
-	auto less_or_equal_to_width_sum = [](double x) {
-		return (sqrt(x) <= 0.6 + 0);
+	auto less_or_equal_to_half_of_width_sum = [](double x) {
+		return (sqrt(x) <= (dog_width + item_width));
 		};
 
 
@@ -272,8 +271,8 @@ SCENARIO("Collision detector") {
 			[](const GatheringEvent& event) { return event.sq_distance; });
 
 		WHEN("At least 3 gathering events") {
-			THEN("Square of distance is less or equal to sum of dog and item width") {
-				CHECK_THAT(sq_distances, Contains(Predicate<double>(less_or_equal_to_width_sum)));
+			THEN("Square of distance is less or equal to half of dog and item width sum") {
+				CHECK_THAT(sq_distances, Contains(Predicate<double>(less_or_equal_to_half_of_width_sum)));
 			}
 		}
 
@@ -320,8 +319,8 @@ SCENARIO("Collision detector") {
 			[](const GatheringEvent& event) { return event.sq_distance; });
 
 		WHEN("There are 4 events") {
-			THEN("Square of distance is less or equal to sum of dog and item width") {
-				CHECK_THAT(sq_distances, Contains(Predicate<double>(less_or_equal_to_width_sum)));
+			THEN("Square of distance is less or equal to half of the dog and item width sum") {
+				CHECK_THAT(sq_distances, Contains(Predicate<double>(less_or_equal_to_half_of_width_sum)));
 			}
 		}
 

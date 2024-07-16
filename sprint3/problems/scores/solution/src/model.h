@@ -42,7 +42,7 @@ struct Position {
 };
 
 struct Loot {
-    int id;
+    int id{};
     int type_{};
     Position pos_;
     bool is_collected_ = false;
@@ -89,47 +89,9 @@ public:
         return end_;
     }
 
-    std::tuple<double, double> GetRoadStartPoint() const {
-        Coord min_x, min_y, max_x, max_y;
+    std::tuple<double, double> GetRoadStartPoint() const;
 
-        if (IsHorizontal()) {
-            min_x = std::min(start_.x, end_.x);
-            max_x = std::max(start_.x, end_.x);
-            min_y = max_y = start_.y;
-        }
-        else {
-            min_y = std::min(start_.y, end_.y);
-            max_y = std::max(start_.y, end_.y);
-            min_x = max_x = start_.x;
-        }
-
-        return std::make_tuple(min_x, min_y);
-    }
-
-    std::tuple<double, double> GetRandomPoint() const {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-
-        double min_x, min_y, max_x, max_y;
-
-        if (IsHorizontal()) {
-            min_x = std::min(start_.x, end_.x);
-            max_x = std::max(start_.x, end_.x);
-            min_y = start_.y - 0.4;
-            max_y = end_.y + 0.4;
-        } 
-        else {
-            min_y = std::min(start_.y, end_.y);
-            max_y = std::max(start_.y, end_.y);
-            min_x = start_.x - 0.4;
-            max_x = end_.x + 0.4;
-        }
-
-        std::uniform_real_distribution<double> dis_x(min_x, max_x);
-        std::uniform_real_distribution<double> dis_y(min_y, max_y);
-
-        return std::make_tuple(dis_x(gen), dis_y(gen));
-    }
+    std::tuple<double, double> GetRandomPoint() const;
 
 private:
     Point start_;
@@ -247,8 +209,17 @@ private:
 
         }
 
-        std::vector<Road> FindRoadsAt(double x, double y) const;
+        const Road& GetRandomRoad() {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis_road(0, roads_.size() - 1);
 
+            int road_index = dis_road(gen);
+
+            return roads_[road_index];
+        }
+
+        std::vector<Road> FindRoadsAt(double x, double y) const;
 
         void AddBuilding(const Building& building) {
             buildings_.emplace_back(building);
@@ -304,16 +275,13 @@ public:
         Position position;
         Speed speed;
         std::string direction = "U";
-
         Bag bag;
+        int score = 0;
 
         void SetDefaultSpeed() {
             speed.Vx = 0.0;
             speed.Vy = 0.0;
         }
-
-        int score = 0;
-
     };
 
     DogId GetDogId() const noexcept {
@@ -359,28 +327,9 @@ public:
 
     }
 
-    void AddRandomLoot() {
-        if (*map_->GetLootTypesNum() > 0) {
-            Loot loot;
+    void AddRandomLoot();
 
-            loot.pos_ = GenerateRandomPointOnMap();
-
-            loot.type_ = GenerateRandomLootType();
-
-            loot.id = all_loot_.size();
-
-            all_loot_.emplace_back(loot);
-        }
-    }
-
-    void RemoveCollectedLoot() {
-        for (auto it = all_loot_.begin(); it != all_loot_.end(); ) {
-            if (it->is_collected_) {
-                it = all_loot_.erase(it);
-            }
-            else ++it;
-        }
-    }
+    void RemoveCollectedLoot();
 
     AllLoot& GetAllLoot() {
         return all_loot_;
@@ -396,58 +345,9 @@ private:
 
     AllLoot all_loot_;
 
-    Position GenerateSpawn(const bool randomize_spawn) {
-
-        auto& roads = map_->GetRoads();
-        Position pos;
-
-        if (randomize_spawn) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dis_road(0, roads.size() - 1);
-
-            int road_index = dis_road(gen);
-            
-            auto& random_road = roads[road_index];
-            auto [x, y] = random_road.GetRandomPoint();
-
-            pos.x = x;
-            pos.y = y;
-        }
-        else {
-            auto& first_road = roads.front();
-            auto [x, y] = first_road.GetRoadStartPoint();
-            pos.x = x;
-            pos.y = y;
-        }
-
-        return pos;
-    }
-
-    //Вынести часть кода в отдельную фукнцию!
-    Position GenerateRandomPointOnMap() {
-        auto& roads = map_->GetRoads();
-
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis_road(0, roads.size() - 1);
-
-        int road_index = dis_road(gen);
-
-        auto& random_road = roads[road_index];
-        auto [x, y] = random_road.GetRandomPoint();
-
-        return { x, y };
-    }
-
-    int GenerateRandomLootType() {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis_loot_type(0, *map_->GetLootTypesNum() - 1);
-
-        return dis_loot_type(gen);
-    }
-
+    Position GenerateSpawn(const bool randomize_spawn);
+    Position GenerateRandomPointOnMap();
+    int GenerateRandomLootType();
 };
 
 class Game {

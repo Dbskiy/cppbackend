@@ -73,8 +73,7 @@ std::vector<DeliveringEvent> FindDeliveringEvents(const ItemsDelivererProvider& 
             auto result = TryCollectPoint(deliverer.start_pos, deliverer.end_pos, base.position);
 
             if (result.IsCollected((deliverer.width + base.width) / 2)) {
-                DeliveringEvent event{ .base_id = d,
-                                      .deliverer_id = d,
+                DeliveringEvent event{.deliverer_id = d,
                                       .sq_distance = result.sq_distance,
                                       .time = result.proj_ratio };
                 events.push_back(event);
