@@ -1,0 +1,71 @@
+#include "request_handler.h"
+
+
+namespace http_handler {
+	StringResponse MakeStringResponse(http::status status, std::string_view body, unsigned http_version, std::string_view content_type)
+	{
+		StringResponse response(status, http_version);
+		response.set(http::field::content_type, content_type);
+		response.body() = body;
+		response.content_length(body.size());
+		return response;
+
+	}
+
+    FileResponse StaticFileResponseBody(fs::path& static_file_path, std::string_view content_type, unsigned http_version)
+    {
+        using namespace http;
+        file_body::value_type file;
+        if (sys::error_code ec; file.open(static_file_path.string().c_str(), beast::file_mode::read, ec), ec) {
+            throw ec.what();
+        }
+
+        FileResponse res;
+        res.version(http_version);
+        res.result(status::ok);
+        res.insert(field::content_type, DefineContentType(content_type));
+
+        res.body() = std::move(file);
+        res.prepare_payload();
+        return res;
+    }
+
+    std::string ErrorResponse(const std::string& code, const std::string& message)
+    {
+        json::object notFound;
+
+        notFound["code"] = code;
+        notFound["message"] = message;
+
+        std::string response_body = json::serialize(notFound);
+
+        return response_body;
+    }
+
+    std::string_view DefineContentType(const std::string_view file_path)
+    {
+        std::unordered_map<std::string_view, std::string_view> content_types{
+            {"json", ContentType::APP_JSON},
+            {"xml", ContentType::APP_XML},
+            {"htm", ContentType::TEXT_HTML},
+            {"html", ContentType::TEXT_HTML},
+            {"css", ContentType::TEXT_CSS},
+            {"txt", ContentType::TEXT_PLAIN},
+            {"js", ContentType::TEXT_JS},
+            {"png", ContentType::IMAGE_PNG},
+            {"jpg", ContentType::IMAGE_JPEG},
+            {"jpe", ContentType::IMAGE_JPEG},
+            {"jpeg", ContentType::IMAGE_JPEG},
+            {"gif", ContentType::IMAGE_GIF},
+            {"bmp", ContentType::IMAGE_BMP},
+            {"ico", ContentType::IMAGE_ICO},
+            {"tiff", ContentType::IMAGE_TIFF},
+            {"tif", ContentType::IMAGE_TIFF},
+            {"svg", ContentType::IMAGE_SVG},
+            {"svgz", ContentType::IMAGE_SVG},
+            {"mpeg", ContentType::AUDIO_MP3},
+        };
+
+        if (file_path.find("api") != std::string::npos) return ContentType::APP_JSON;
+
+        size_t index = file_path.find_last_of(".");
