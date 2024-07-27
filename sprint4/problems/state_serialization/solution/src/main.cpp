@@ -91,7 +91,6 @@ int main(int argc, const char* argv[]) {
             // 1. Загружаем карту из файла и построить модель игры
             model::Game game = json_loader::LoadGame(args->config_file);
 
-
             const unsigned num_threads = std::thread::hardware_concurrency();
             
             // 2. Инициализируем io_context

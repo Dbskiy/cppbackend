@@ -29,12 +29,13 @@ namespace app {
 		}
 
 		Dog::DogName dog_name(name);
+		Map::Id id(map_id);
 
-		if (auto session = game_.FindSession(Map::Id(map_id))) {
+		if (auto session = game_.FindSession(id, true)) {
 			auto [player, token] = players_.AddPlayer(session->AddDog(dog_name, randomize_spawn), session);
 
 			return { token, player->GetId() };
-		} 
+		}
 		else {
 			throw JoinGameError{ JoinGameErrorReason::InvalidMap };
 		}

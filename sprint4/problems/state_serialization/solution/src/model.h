@@ -209,7 +209,7 @@ private:
 
         }
 
-        const Road& GetRandomRoad() {
+        const Road& GetRandomRoad() const {
             std::random_device rd;
             std::mt19937 gen(rd());
             std::uniform_int_distribution<> dis_road(0, roads_.size() - 1);
@@ -248,7 +248,7 @@ public:
     using DogId = util::Tagged<std::uint64_t, Dog>;
     using DogName = util::Tagged<std::string, Dog>;
 
-    explicit Dog(std::uint64_t dog_id, DogName name, Position& spawn_point)
+    explicit Dog(DogId dog_id, DogName name, Position spawn_point)
         : dog_id_(Dog::DogId(dog_id)), 
         name_(name),
         spawn_point_(spawn_point),
@@ -266,7 +266,6 @@ public:
             dog_loot_.clear();
             dog_loot_.shrink_to_fit();
         }
-
         std::vector<Loot> dog_loot_;
     };
 
@@ -309,19 +308,28 @@ private:
 
 class GameSession {
 public:
+    using SessionId = util::Tagged<unsigned, GameSession>;
     using Dogs = std::vector<std::shared_ptr<Dog>>;
     using AllLoot = std::vector<Loot>;
 
-    explicit GameSession(Map* map) : map_(map) {};
+    explicit GameSession(SessionId id, const Map* map) : id_(id), map_(map) {};
+
+    const SessionId GetId() const noexcept {
+        return id_;
+    }
 
     Dogs& GetDogs() {
         return dogs_;
     }
 
+    void SetDogs(Dogs& dogs) {
+        dogs_ = dogs;
+    }
+
     std::shared_ptr<Dog> AddDog(Dog::DogName user_name, const bool randomize_spawn) {
         auto spawn_point = GenerateSpawn(randomize_spawn);
 
-        auto new_dog = std::make_shared<Dog>(dogs_.size(), user_name, spawn_point);
+        auto new_dog = std::make_shared<Dog>(Dog::DogId(dogs_.size()), user_name, spawn_point);
         dogs_.emplace_back(new_dog);
         return new_dog;
 
@@ -335,13 +343,18 @@ public:
         return all_loot_;
     }
 
+    void SetAllLoot(const AllLoot& all_loot) {
+        all_loot_ = all_loot;
+    }
+
     const Map* GetMap() const noexcept {
         return map_;
     }
 
 private:
+    SessionId id_;
     Dogs dogs_;
-    Map* map_;
+    const Map* map_;
 
     AllLoot all_loot_;
 
@@ -378,7 +391,11 @@ public:
         return nullptr;
     }
 
-    std::shared_ptr<GameSession> FindSession(Map::Id map_id);
+    std::shared_ptr<GameSession> FindSession(Map::Id map_id, bool = false);
+
+    void SetSessions(Sessions& sessions) {
+        sessions_ = sessions;
+    }
 
     void SetLootGeneratorConfig(double period, double probability) {
         loot_generator_config_ = LootGeneratorConfig{ period, probability };
@@ -394,7 +411,6 @@ private:
     using MapIdHasher = util::TaggedHasher<Map::Id>;
     using MapIdToIndex = std::unordered_map<Map::Id, size_t, MapIdHasher>;
 
-    void AddGameSession(std::shared_ptr<GameSession> game_session);
     Maps maps_;
     MapIdToIndex map_id_to_index_;
 

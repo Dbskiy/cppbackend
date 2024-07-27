@@ -34,7 +34,7 @@ SCENARIO("Model", "[Model]") {
 	GIVEN("a game session with no loot types") {
 
 		auto& map1 = TestData::map1;
-		GameSession session{ &map1 };
+		GameSession session{GameSession::SessionId(0), &map1 };
 		REQUIRE(*map1.GetLootTypesNum() == 0);
 
 		WHEN("There are no roads to generate loot") {
@@ -56,7 +56,7 @@ SCENARIO("Model", "[Model]") {
 
 	GIVEN("a game session with 2 loot types") {
 		auto& map2 = TestData::map2;
-		GameSession session{ &map2 };
+		GameSession session{ GameSession::SessionId(1), & map2};
 
 		WHEN("There are no roads to generate loot") {
 			CHECK(map2.GetRoads().size() == 0);

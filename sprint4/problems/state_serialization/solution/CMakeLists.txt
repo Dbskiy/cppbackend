@@ -15,8 +15,7 @@ add_library(MyLib STATIC
 	src/providers.h
 	src/model.h
 	src/model.cpp
-	src/model_serialization.h
-	src/players_info_serialization.h
+	src/state_serialization.h
 	src/loot_generator.h
 	src/loot_generator.cpp
 	src/tagged.h)
@@ -53,6 +52,7 @@ add_executable(game_server_tests
 	tests/loot_generator_tests.cpp
 	tests/model_tests.cpp
 	tests/collision-detector-tests.cpp
+	tests/state-serialization-tests.cpp
 )
 
 target_link_libraries(game_server_tests PRIVATE CONAN_PKG::catch2 MyLib)
