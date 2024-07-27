@@ -1,7 +1,5 @@
 #include <boost/serialization/vector.hpp>
-
-#include "model.h"
-
+#include "app.h"
 
 namespace model {
 	template <typename Archive>
@@ -9,6 +7,7 @@ namespace model {
 		ar& point.x;
 		ar& point.y;
 	}
+
 	template <typename Archive>
 	void serialize(Archive& ar, Loot& obj, [[maybe_unused]] const unsigned version) {
 		ar& (obj.id);
@@ -21,6 +20,7 @@ namespace model {
 		ar& (speed.Vx);
 		ar& (speed.Vy);
 	}
+
 	template <typename Archive>
 	void serialize(Archive& ar, Dog::Bag& bag, [[maybe_unused]] const unsigned version) {
 		ar& (bag.dog_loot_);
@@ -46,14 +46,13 @@ namespace serialization {
 		DogRepr() = default;
 
 		explicit DogRepr(std::shared_ptr<Dog> dog) :
-		id_(dog->GetDogId()),
-		name_(dog->GetDogName()),
-		spawn_pos_(dog->GetSpawnPoint()),
-		state_(dog->GetDogState())
-		{}
+			id_(dog->GetDogId()),
+			name_(dog->GetDogName()),
+			spawn_pos_(dog->GetSpawnPoint()),
+			state_(dog->GetDogState()) {}
 
 		[[nodiscard]] std::shared_ptr<Dog> Restore() const {
-			Dog dog{ id_, name_, spawn_pos_};
+			Dog dog{ id_, name_, spawn_pos_ };
 
 			auto& state = dog.GetDogState();
 			state.bag = state_.bag;
@@ -62,7 +61,7 @@ namespace serialization {
 			state.prev_position = state_.prev_position;
 			state.score = state_.score;
 			state.speed = state_.speed;
-			
+
 			return std::make_shared<Dog>(dog);
 		}
 
@@ -75,8 +74,8 @@ namespace serialization {
 		}
 
 	private:
-		Dog::DogId id_ = Dog::DogId{ 0u};
-		Dog::DogName name_{""};
+		Dog::DogId id_ = Dog::DogId{ 0u };
+		Dog::DogName name_{ "" };
 		Position spawn_pos_;
 		Dog::DogState state_;
 	};
@@ -86,7 +85,7 @@ namespace serialization {
 		using VDogRepr = std::vector<DogRepr>;
 	public:
 		SessionRepr() = default;
-		
+
 		explicit SessionRepr(std::shared_ptr<GameSession> session) : map_id_(*session->GetMap()->GetId()), all_loot_(session->GetAllLoot())
 		{
 			for (auto& dog : session->GetDogs()) {
@@ -155,20 +154,75 @@ namespace serialization {
 		SessionsRepr sessions_repr_;
 	};
 }
-//#include <boost/serialization/vector.hpp>
-//
-//#include "app.h"
-//
-//namespace app {
-//	class TokenRepr {
-//	public:
-//		TokenRepr() = default;
-//
-//		explicit TokenRepr() {
-//
-//		}
-//	private:
-//		std::string Token;
-//
-//	};
-//}
+
+namespace app_serialization {
+	using namespace app;
+
+	template <typename Archive>
+	void serialize(Archive& ar, Token token, [[maybe_unused]] const unsigned version) {
+		ar& (*token);
+	}
+
+	class PlayerRepr {
+	public:
+		PlayerRepr() = default;
+
+		explicit PlayerRepr(model::GameSession::SessionId session_id, model::Dog::DogId dog_id)
+			: 
+			session_id_(session_id),
+			dog_id_(dog_id) {}
+
+
+		[[nodiscard]] std::shared_ptr<Player> Restore(const model::Game& game) const {
+			auto session = game.FindGameSession(session_id_);
+			auto dog = session->GetDogById(dog_id_);
+
+			return std::make_shared<Player>(dog, session);
+		}
+
+		template <typename Archive>
+		void serialize(Archive& ar, [[maybe_unused]] const unsigned version) {
+			ar& (*session_id_);
+			ar& (*dog_id_);
+		}
+
+	private:
+		model::GameSession::SessionId session_id_;
+		model::Dog::DogId dog_id_;
+	};
+
+	class PlayersRepr {
+	public:
+		PlayersRepr() = default;
+
+		explicit PlayersRepr(const Players& players) {
+			auto& players_info = players.GetPlayersInfo();
+
+			for (auto& pair : players_info) {
+				tokens_.push_back(pair.first);
+				players_repr_.push_back(PlayerRepr(pair.second->session_->GetId(), pair.second->GetId()));
+			}
+		}
+
+		[[nodiscard]] void Restore(const model::Game& game, Players& players) const {
+			Players::PlayersInfo players_info;
+			for (size_t i = 0; i < tokens_.size(); i++)
+			{
+				players_info[tokens_[i]] = players_repr_[i].Restore(game);
+			}
+			players.SetPlayersInfo(players_info);
+		}
+
+		template <typename Archive>
+		void serialize(Archive& ar, [[maybe_unused]] const unsigned version) {
+			ar& tokens_;
+			ar& players_repr_;
+		}
+
+
+	private:
+		std::vector<Token> tokens_;
+		std::vector<PlayerRepr> players_repr_;
+
+	};
+}

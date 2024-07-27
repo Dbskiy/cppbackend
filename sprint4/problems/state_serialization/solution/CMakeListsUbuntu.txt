@@ -43,6 +43,7 @@ add_executable(game_server
 	src/ticker.h
 	src/loot_extra_data.cpp
 	src/loot_extra_data.h
+	src/save_and_restore_state.h
 )
 
 target_link_libraries(game_server PRIVATE MyLib)

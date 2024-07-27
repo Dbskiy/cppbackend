@@ -67,11 +67,21 @@ namespace app {
     class Players {
     public:
         using PairPlayerAndToken = std::tuple<std::shared_ptr<Player>, Token>;
+        using PlayersInfo = std::unordered_map<Token, std::shared_ptr<Player>, TokenHasher>;
 
-        Players::PairPlayerAndToken AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session);
+        void SetPlayersInfo(PlayersInfo& players_info) {
+            players_info_ = players_info;
+        }
+
+        const PlayersInfo& GetPlayersInfo() const {
+            return players_info_;
+        }
+
+        PairPlayerAndToken AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session);
         
         std::shared_ptr<Player> FindByToken(const Token& token);
 
+        
         
     private:
         std::random_device random_device_;
@@ -96,8 +106,8 @@ namespace app {
 
             return Token(ss.str());
         }
-
-        std::unordered_map<Token, std::shared_ptr<Player>, TokenHasher> players_;
+        
+        PlayersInfo players_info_;
     };
 
     enum class JoinGameErrorReason {

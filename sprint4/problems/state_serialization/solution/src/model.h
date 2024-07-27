@@ -326,6 +326,13 @@ public:
         dogs_ = dogs;
     }
 
+    const std::shared_ptr<Dog> GetDogById(Dog::DogId id) const noexcept {
+        if (*id < dogs_.size()) {
+            return dogs_[*id];
+        }
+        return nullptr;
+    }
+
     std::shared_ptr<Dog> AddDog(Dog::DogName user_name, const bool randomize_spawn) {
         auto spawn_point = GenerateSpawn(randomize_spawn);
 
@@ -391,7 +398,15 @@ public:
         return nullptr;
     }
 
-    std::shared_ptr<GameSession> FindSession(Map::Id map_id, bool = false);
+    const std::shared_ptr<GameSession> FindGameSession(GameSession::SessionId id) const noexcept {
+        if (*id < sessions_.size()) {
+            return sessions_[*id];
+        }
+
+        return nullptr;
+    }
+
+    std::shared_ptr<GameSession> ConnectToSession(Map::Id map_id);
 
     void SetSessions(Sessions& sessions) {
         sessions_ = sessions;

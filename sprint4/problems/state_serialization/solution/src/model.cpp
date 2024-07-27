@@ -175,20 +175,17 @@ void Game::AddMap(Map map) {
 }
 
 //нахождение нужной сессии без добавления собаки
-std::shared_ptr<GameSession> Game::FindSession(Map::Id map_id, bool add_new)
+std::shared_ptr<GameSession> Game::ConnectToSession(Map::Id map_id)
 {
     for (auto& session : sessions_) {
         if (session->GetMap()->GetId() == map_id && session->GetDogs().size() - 1 < 5) {
             return session;
         }
     }
-
-    if (add_new) {
-        if (auto map = FindMap(map_id)) {
-            auto new_session = std::make_shared<GameSession>(GameSession::SessionId(sessions_.size()), map);
-            sessions_.emplace_back(new_session);
-            return new_session;
-        }
+    if (auto map = FindMap(map_id)) {
+        auto new_session = std::make_shared<GameSession>(GameSession::SessionId(sessions_.size()), map);
+        sessions_.emplace_back(new_session);
+        return new_session;
     }
 
     return nullptr;

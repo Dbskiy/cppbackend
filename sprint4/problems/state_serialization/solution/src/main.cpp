@@ -40,6 +40,8 @@ struct Args {
     std::string config_file;
     std::string static_files_root;
     bool randomize_spawn_points = false;
+    std::string state_file = "";
+    int save_state_period = 0;
 };
 
 [[nodiscard]] std::optional<Args> ParseCommandLine(int argc, const char* const argv[]) {
@@ -55,6 +57,9 @@ struct Args {
         ("config-file,c", po::value(&args.config_file)->value_name("file"s), "set config file path")
         ("www-root,w", po::value(&args.static_files_root)->value_name("dir"s), "set static files root")
         ("randomize-spawn-points", po::bool_switch(&args.randomize_spawn_points), "spawn dogs at random positions");
+        ("state-file", po::value(&args.state_file)->value_name("file"s), "set state file path");
+        ("save-state-period", po::value(&args.save_state_period)->value_name("milliseconds"s), "set save state period");
+
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -87,6 +92,11 @@ int main(int argc, const char* argv[]) {
 
             //если параметра нет, то значение будет false => спавн в начале карты
             bool randomize_spawn = args->randomize_spawn_points;
+
+
+            //параметры, отвечающие за сохранение игрового состояния
+            std::string state_file = args->state_file; //если путь пустой, то сохранение не требуется
+            int save_state_period = args->save_state_period; //если путь не пустой: 0 - сохранять при заврешении работы сервера, > 0 - через заданный промежуток
 
             // 1. Загружаем карту из файла и построить модель игры
             model::Game game = json_loader::LoadGame(args->config_file);

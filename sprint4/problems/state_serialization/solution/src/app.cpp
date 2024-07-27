@@ -6,7 +6,7 @@ namespace app {
 		auto token = generateToken();
 		auto player = std::make_shared<Player>(dog, session);
 
-		players_[token] = player;
+		players_info_[token] = player;
 
 		return std::make_tuple(player, token);
 	}
@@ -14,10 +14,10 @@ namespace app {
 	std::shared_ptr<Player> Players::FindByToken(const Token& token)
 	{
 
-		if (players_.find(token) == players_.end()) {
+		if (players_info_.find(token) == players_info_.end()) {
 			return nullptr;
 		}
-		return players_[token];
+		return players_info_[token];
 	}
 
 
@@ -31,7 +31,7 @@ namespace app {
 		Dog::DogName dog_name(name);
 		Map::Id id(map_id);
 
-		if (auto session = game_.FindSession(id, true)) {
+		if (auto session = game_.ConnectToSession(id)) {
 			auto [player, token] = players_.AddPlayer(session->AddDog(dog_name, randomize_spawn), session);
 
 			return { token, player->GetId() };
