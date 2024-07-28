@@ -18,7 +18,8 @@ add_library(MyLib STATIC
 	src/state_serialization.h
 	src/loot_generator.h
 	src/loot_generator.cpp
-	src/tagged.h)
+	src/tagged.h
+)
 
 target_include_directories(MyLib PUBLIC CONAN_PKG::boost)
 target_link_libraries(MyLib PUBLIC CONAN_PKG::boost Threads::Threads)
@@ -44,6 +45,8 @@ add_executable(game_server
 	src/loot_extra_data.cpp
 	src/loot_extra_data.h
 	src/save_and_restore_state.h
+	src/serializing_listener.cpp
+	src/serializing_listener.h
 )
 
 target_link_libraries(game_server PRIVATE MyLib)
