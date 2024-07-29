@@ -38,7 +38,7 @@ namespace model {
 	}
 }
 
-namespace serialization {
+namespace model_serialization {
 	using namespace model;
 	//Серилизованное предствление класса Dog
 	class DogRepr {
@@ -187,8 +187,8 @@ namespace app_serialization {
 		}
 
 	private:
-		model::GameSession::SessionId session_id_;
-		model::Dog::DogId dog_id_;
+		model::GameSession::SessionId session_id_{ 0u };
+		model::Dog::DogId dog_id_ = Dog::DogId{ 0u };
 	};
 
 	class PlayersRepr {
@@ -199,7 +199,7 @@ namespace app_serialization {
 			auto& players_info = players.GetPlayersInfo();
 
 			for (auto& pair : players_info) {
-				tokens_.push_back(pair.first);
+				tokens_.push_back(*pair.first);
 				players_repr_.push_back(PlayerRepr(pair.second->session_->GetId(), pair.second->GetId()));
 			}
 		}
@@ -208,7 +208,10 @@ namespace app_serialization {
 			Players::PlayersInfo players_info;
 			for (size_t i = 0; i < tokens_.size(); i++)
 			{
-				players_info[tokens_[i]] = players_repr_[i].Restore(game);
+				auto& token = tokens_[i];
+				auto player = players_repr_[i].Restore(game);
+
+				players_info[Token(token)] = player;
 			}
 			players.SetPlayersInfo(players_info);
 		}
@@ -221,7 +224,7 @@ namespace app_serialization {
 
 
 	private:
-		std::vector<Token> tokens_;
+		std::vector<std::string> tokens_;
 		std::vector<PlayerRepr> players_repr_;
 
 	};

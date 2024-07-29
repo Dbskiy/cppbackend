@@ -293,6 +293,12 @@ namespace app {
         void PointYOutOfRoad(Dog::DogState& state, int start_y, int end_y) const;
     };
 
+    class ApplicationListener {
+    public:
+        virtual ~ApplicationListener() = default;
+        virtual void OnTick(int tick) = 0;
+    };
+
     class Application {
     public:
         Application(Game& game, Players& players, loot_gen::LootGenerator& loot_gen)
@@ -302,6 +308,11 @@ namespace app {
         
         Game& game_;
         Players& players_;
+
+        void SetApplicationListener(const std::shared_ptr<ApplicationListener>& listener) {
+            listener_ = listener;
+        }
+
         loot_gen::LootGenerator loot_gen_;
 
         JoinGameResult JoinGame(const std::string& map_id, const std::string& name, const bool randomize_spawn);
@@ -315,6 +326,8 @@ namespace app {
         void Tick(int tick);
 
     private:
+
+        std::shared_ptr<ApplicationListener> listener_;
 
         JoinGameUseCase join_game_{ game_, players_ };
         ListPlayersUseCase list_players_{ game_, players_ };

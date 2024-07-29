@@ -37,13 +37,13 @@ SCENARIO_METHOD(Fixture, "Dog Serialization") {
 
         WHEN("dog is serialized") {
             {
-                serialization::DogRepr repr{dog};
+                model_serialization::DogRepr repr{dog};
                 output_archive << repr;
             }
 
             THEN("it can be deserialized") {
                 InputArchive input_archive{strm};
-                serialization::DogRepr repr;
+                model_serialization::DogRepr repr;
                 input_archive >> repr;
                 auto restored = repr.Restore();
                 auto& state = restored->GetDogState();

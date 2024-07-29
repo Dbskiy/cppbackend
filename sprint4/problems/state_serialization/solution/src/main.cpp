@@ -11,10 +11,12 @@
 #include "json_loader.h"
 #include "ticker.h"
 #include "loot_generator.h"
-
+#include "serializing_listener.h"
 
 using namespace std::literals;
 using namespace ticker;
+using namespace save_and_restore;
+using namespace serializing_listener;
 namespace net = boost::asio;
 namespace sys = boost::system;
 namespace fs = std::filesystem;
@@ -56,8 +58,8 @@ struct Args {
         ("tick-period,t", po::value(&args.tick_period)->value_name("milliseconds"s), "set tick period")
         ("config-file,c", po::value(&args.config_file)->value_name("file"s), "set config file path")
         ("www-root,w", po::value(&args.static_files_root)->value_name("dir"s), "set static files root")
-        ("randomize-spawn-points", po::bool_switch(&args.randomize_spawn_points), "spawn dogs at random positions");
-        ("state-file", po::value(&args.state_file)->value_name("file"s), "set state file path");
+        ("randomize-spawn-points", po::bool_switch(&args.randomize_spawn_points), "spawn dogs at random positions")
+        ("state-file", po::value(&args.state_file)->value_name("file"s), "set state file path")
         ("save-state-period", po::value(&args.save_state_period)->value_name("milliseconds"s), "set save state period");
 
 
@@ -87,26 +89,19 @@ int main(int argc, const char* argv[]) {
     try {
         if (auto args = ParseCommandLine(argc, argv)) {
 
-            //если параметра нет, то присвоится nullopt
+            //Интервал игрового времени
             int tick_period = args->tick_period;
 
             //если параметра нет, то значение будет false => спавн в начале карты
             bool randomize_spawn = args->randomize_spawn_points;
 
 
-            //параметры, отвечающие за сохранение игрового состояния
-            std::string state_file = args->state_file; //если путь пустой, то сохранение не требуется
-            int save_state_period = args->save_state_period; //если путь не пустой: 0 - сохранять при заврешении работы сервера, > 0 - через заданный промежуток
-
-            // 1. Загружаем карту из файла и построить модель игры
-            model::Game game = json_loader::LoadGame(args->config_file);
-
             const unsigned num_threads = std::thread::hardware_concurrency();
             
-            // 2. Инициализируем io_context
+            // 1. Инициализируем io_context
             net::io_context ioc(num_threads);
 
-            // 3. Добавляем асинхронный обработчик сигналов SIGINT и SIGTERM
+            // 2. Добавляем асинхронный обработчик сигналов SIGINT и SIGTERM
             net::signal_set signals(ioc, SIGINT, SIGTERM);
             signals.async_wait([&ioc](const sys::error_code& ec, [[maybe_unused]] int signal_number) {
                 if (!ec) {
@@ -119,12 +114,38 @@ int main(int argc, const char* argv[]) {
 
             logger::InitBoostLogFilter(); //объявляем логер
             
+            // 3. Загружаем карту из файла, строим модель игры. Создаем объект класса Игроков
+            model::Game game = json_loader::LoadGame(args->config_file);
             app::Players players;
 
             auto interval = std::chrono::seconds(static_cast<int64_t>(game.GetLootGeneratorConfig()->period_));
             loot_gen::LootGenerator loot_generator(interval, game.GetLootGeneratorConfig()->probability_);
             
             app::Application App_{game, players, loot_generator};
+            std::shared_ptr<StateSaverAndRestorer> state_saver_;
+            
+            auto& state_file_path = args->state_file;
+
+            //Если путь к сохраненному файлу не пустой 
+            if (state_file_path != "") {
+                if (state_file_path.find("\state") == std::string::npos) {
+                    state_file_path = "\state" + state_file_path;
+                }
+                state_saver_ = std::make_shared<StateSaverAndRestorer>(state_file_path);
+
+                try {
+                    state_saver_->RestoreState(game, players);
+                }
+                catch (...) {
+                    //logger::LOG(logger::GetServerStopData(EXIT_FAILURE, ex), "Failed to restore state"sv);
+                    //throw;
+                }
+
+                if (args->save_state_period > 0) {
+                    SerializingListener serializaing_listener(state_saver_, args->save_state_period, game, players);
+                    App_.SetApplicationListener(std::make_shared<SerializingListener>(serializaing_listener));
+                }
+            }
 
             if (tick_period > 0) {
                 auto ticker = std::make_shared<Ticker>(api_strand, std::chrono::milliseconds(tick_period),
@@ -156,7 +177,12 @@ int main(int argc, const char* argv[]) {
             // 6. Запускаем обработку асинхронных операций
             RunWorkers(std::max(1u, num_threads), [&ioc] {
                 ioc.run();
-                });
+            });
+
+            //Сохранение состояния после заврешения работы программы
+            if (state_saver_) {
+                state_saver_->SaveState(game, players);
+            }
         }
     }
     catch (const std::exception& ex) {

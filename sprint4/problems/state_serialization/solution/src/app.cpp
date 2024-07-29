@@ -422,6 +422,10 @@ namespace app {
 		game_time_.MoveAllPlayers(tick);
 		game_time_.GenerateLoot(tick);
 		game_time_.GatheringAndDeliviring(tick);
+
+		if (listener_) {
+			listener_->OnTick(tick);
+		}
 	}
 }
 
