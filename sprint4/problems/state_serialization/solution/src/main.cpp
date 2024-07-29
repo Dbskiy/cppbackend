@@ -23,18 +23,18 @@ namespace fs = std::filesystem;
 
 namespace {
 
-// Запускает функцию fn на n потоках, включая текущий
-template <typename Fn>
-void RunWorkers(unsigned num_threads, const Fn& fn) {
-    num_threads = std::max(1u, num_threads);
-    std::vector<std::jthread> workers;
-    workers.reserve(num_threads - 1);
-    // Запускаем n-1 рабочих потоков, выполняющих функцию fn
-    while (--num_threads) {
-        workers.emplace_back(fn);
+    // Запускает функцию fn на n потоках, включая текущий
+    template <typename Fn>
+    void RunWorkers(unsigned num_threads, const Fn& fn) {
+        num_threads = std::max(1u, num_threads);
+        std::vector<std::jthread> workers;
+        workers.reserve(num_threads - 1);
+        // Запускаем n-1 рабочих потоков, выполняющих функцию fn
+        while (--num_threads) {
+            workers.emplace_back(fn);
+        }
+        fn();
     }
-    fn();
-}
 }  // namespace
 
 struct Args {
@@ -50,7 +50,7 @@ struct Args {
     namespace po = boost::program_options;
 
     po::options_description desc{ "Allowed options"s };
-    
+
     Args args{};
 
     desc.add_options()
@@ -89,15 +89,11 @@ int main(int argc, const char* argv[]) {
     try {
         if (auto args = ParseCommandLine(argc, argv)) {
 
-            //Интервал игрового времени
-            int tick_period = args->tick_period;
-
             //если параметра нет, то значение будет false => спавн в начале карты
             bool randomize_spawn = args->randomize_spawn_points;
 
-
             const unsigned num_threads = std::thread::hardware_concurrency();
-            
+
             // 1. Инициализируем io_context
             net::io_context ioc(num_threads);
 
@@ -112,41 +108,50 @@ int main(int argc, const char* argv[]) {
 
             auto api_strand = net::make_strand(ioc);
 
-            logger::InitBoostLogFilter(); //объявляем логер
-            
-            // 3. Загружаем карту из файла, строим модель игры. Создаем объект класса Игроков
+            // 3. Объявление логера
+            logger::InitBoostLogFilter(); 
+
+            // 4. Загружаем карту из файла, строим модель игры. Создаем объект класса Игроков
             model::Game game = json_loader::LoadGame(args->config_file);
             app::Players players;
 
+            // 5. Создаем объект для генерации игрового лута
             auto interval = std::chrono::seconds(static_cast<int64_t>(game.GetLootGeneratorConfig()->period_));
             loot_gen::LootGenerator loot_generator(interval, game.GetLootGeneratorConfig()->probability_);
-            
-            app::Application App_{game, players, loot_generator};
-            std::shared_ptr<StateSaverAndRestorer> state_saver_;
-            
-            auto& state_file_path = args->state_file;
 
-            //Если путь к сохраненному файлу не пустой 
+            // 6. Создаем объект с игроками и сценариями использования игровой модели
+            app::Application App_{ game, players, loot_generator };
+            std::shared_ptr<StateSaverAndRestorer> state_saver_;
+
+            // 7. Проверяем наличие пути к файлу автосхоранения игрового сохранения
+            auto& state_file_path = args->state_file;
+            //Если путь к сохраненному файлу не пустой
             if (state_file_path != "") {
-                if (state_file_path.find("\state") == std::string::npos) {
-                    state_file_path = "\state" + state_file_path;
+                if (state_file_path.find("/state/") != std::string::npos) {
+                    state_file_path = state_file_path.substr(1);
+                }
+                else if (state_file_path.find("state/") == std::string::npos) {
+                    state_file_path = "state/" + state_file_path;
                 }
                 state_saver_ = std::make_shared<StateSaverAndRestorer>(state_file_path);
 
+                // 8. Проверяеме возможность восстановления состояния
                 try {
                     state_saver_->RestoreState(game, players);
+                } //в случае, если восстановление заврешилось ошибкой
+                catch (const std::exception& ex) {
+                    logger::LOG(logger::GetServerStopData(EXIT_FAILURE, ex), "Failed to restore state"sv);
+                    throw;
                 }
-                catch (...) {
-                    //logger::LOG(logger::GetServerStopData(EXIT_FAILURE, ex), "Failed to restore state"sv);
-                    //throw;
-                }
-
+                
+                // 9. Инициализируем слушателя для App_, если указан период автосохранения
                 if (args->save_state_period > 0) {
-                    SerializingListener serializaing_listener(state_saver_, args->save_state_period, game, players);
-                    App_.SetApplicationListener(std::make_shared<SerializingListener>(serializaing_listener));
+                    App_.SetApplicationListener(std::make_shared<SerializingListener>(state_saver_, args->save_state_period, game, players));
                 }
             }
 
+            // 10. Запускаем игровое время, если указан интервал
+            int tick_period = args->tick_period;
             if (tick_period > 0) {
                 auto ticker = std::make_shared<Ticker>(api_strand, std::chrono::milliseconds(tick_period),
                     [&App_, &loot_generator](std::chrono::milliseconds delta) { App_.Tick(delta.count()); }
@@ -156,14 +161,14 @@ int main(int argc, const char* argv[]) {
             }
 
 
-            // 4. Создаём обработчик HTTP-запросов и связываем его с моделью игры
+            // 11. Создаём обработчик HTTP-запросов и связываем его с моделью игры
             auto handler = std::make_shared<http_handler::RequestHandler>(api_strand, App_, fs::path(args->static_files_root),
                 args->tick_period, args->randomize_spawn_points);
 
 
             http_handler::LoggingRequestHandler logging_handler{ *handler };
 
-            // 5. Запустить обработчик HTTP-запросов, делегируя их обработчику запросов
+            // 12. Запустить обработчик HTTP-запросов, делегируя их обработчику запросов
 
             const auto address = net::ip::make_address("0.0.0.0");
             constexpr net::ip::port_type port = 8080;
@@ -174,12 +179,12 @@ int main(int argc, const char* argv[]) {
 
             logger::LOG(logger::GetServerStartData(port, address.to_string()), "server has started"sv);
 
-            // 6. Запускаем обработку асинхронных операций
+            // 13. Запускаем обработку асинхронных операций
             RunWorkers(std::max(1u, num_threads), [&ioc] {
                 ioc.run();
-            });
+                });
 
-            //Сохранение состояния после заврешения работы программы
+            // 14. Сохраненяем состояние после заврешения работы сервера
             if (state_saver_) {
                 state_saver_->SaveState(game, players);
             }

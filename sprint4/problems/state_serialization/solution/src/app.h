@@ -3,6 +3,7 @@
 #include <boost/beast/http.hpp>
 
 #include <iomanip>
+#include <iostream>
 #include <random>
 #include <string>
 #include <sstream>
@@ -309,7 +310,7 @@ namespace app {
         Game& game_;
         Players& players_;
 
-        void SetApplicationListener(const std::shared_ptr<ApplicationListener>& listener) {
+        void SetApplicationListener(std::shared_ptr<ApplicationListener> listener) {
             listener_ = listener;
         }
 
