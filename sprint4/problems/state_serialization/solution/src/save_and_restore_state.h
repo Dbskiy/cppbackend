@@ -55,9 +55,6 @@ namespace save_and_restore {
     private:
         void RenameFile() {
             if (fs::exists(file_path_)) {
-                if (fs::exists(prev_state_save_path_)) {
-                    fs::remove(prev_state_save_path_);
-                }
                 fs::rename(file_path_, prev_state_save_path_);
             }
         }

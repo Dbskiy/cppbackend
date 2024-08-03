@@ -48,7 +48,7 @@ int main(int argc, const char* argv[]) {
 
             if (action == "add_book") {
                 json::object result;
-		pqxx::work c(conn);
+		        pqxx::work c(conn);
                 try {
                     auto& payload = json_req.at("payload");
                     std::string title = payload.at("title").as_string().c_str();
