@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <pqxx/pqxx>
 #include <pqxx/connection>
 #include <pqxx/transaction>
 
