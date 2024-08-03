@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-
+#include <tuple>
 #include "../util/tagged_uuid.h"
 
 namespace domain {

@@ -1,9 +1,11 @@
 #pragma once
 #include <iostream>
+#include <tuple>
+
 #include <pqxx/pqxx>
 #include <pqxx/connection>
 #include <pqxx/transaction>
-
+#include "../domain/author.h"
 #include "../domain/book.h"
 
 namespace postgres {
