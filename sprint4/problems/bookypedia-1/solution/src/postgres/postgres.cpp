@@ -51,7 +51,7 @@ BookRepositoryImpl::BooksInfo BookRepositoryImpl::GetBooksByAuthor(domain::Autho
 
     pqxx::read_transaction r(connection_);
 
-    auto get_book = "SELECT title, publication_year FROM books WHERE author_id=" + r.quote(author_id.ToString()) + " ORDER BY title ASC";
+    auto get_book = "SELECT title, publication_year FROM books WHERE author_id=" + r.quote(author_id.ToString()) + " ORDER BY publication_year ASC";
 
     for (auto [title, publication_year] : r.query<std::string, int>(get_book)) {
         books_info.push_back(std::make_tuple(title, publication_year));
