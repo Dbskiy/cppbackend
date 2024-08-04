@@ -40,9 +40,7 @@ void BookRepositoryImpl::Save(const domain::Book& book) {
 
     work.exec_params(
         R"(
-INSERT INTO books (id, author_id, title, publication_year) VALUES($1, $2, $3, $4)
-ON CONFLICT (id) DO UPDATE author_id=$2, title=$3, publication_year=$4;
-    )"_zv,
+INSERT INTO books (id, author_id, title, publication_year) VALUES($1, $2, $3, $4);)"_zv,
         book.GetId().ToString(), book.GetAuthorId().ToString(), book.GetTitle(), book.GetPublicationYear()
     );
     work.commit();
@@ -50,10 +48,10 @@ ON CONFLICT (id) DO UPDATE author_id=$2, title=$3, publication_year=$4;
 
 BookRepositoryImpl::BooksInfo BookRepositoryImpl::GetBooksByAuthor(domain::AuthorId& author_id) {
     BooksInfo books_info;
-    
-    auto get_book = "SELECT title, publication_year FROM books WHERE author_id=" + author_id.ToString() + " ORDER BY title ASC";
 
     pqxx::read_transaction r(connection_);
+
+    auto get_book = "SELECT title, publication_year FROM books WHERE author_id=" + r.quote(author_id.ToString()) + " ORDER BY title ASC";
 
     for (auto [title, publication_year] : r.query<std::string, int>(get_book)) {
         books_info.push_back(std::make_tuple(title, publication_year));
@@ -91,7 +89,7 @@ CREATE TABLE IF NOT EXISTS authors (
     id UUID CONSTRAINT book_id_constraint PRIMARY KEY,
     author_id UUID NOT NULL, 
     title varchar(100) UNIQUE NOT NULL,
-    integer publication_year
+    publication_year integer
 );
 )"_zv);
 

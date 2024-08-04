@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.11)
 project(bookypedia CXX)
 set(CMAKE_CXX_STANDARD 20)
 
+# Устанавливаем переменную CONAN_DISABLE_CHECK_COMPILER
+set(CONAN_DISABLE_CHECK_COMPILER ON CACHE STRING "Disable Conan compiler check")
+
 include(${CMAKE_BINARY_DIR}/conanbuildinfo_multi.cmake)
 conan_basic_setup(TARGETS)
 
@@ -43,3 +46,4 @@ add_executable(tests
 	tests/tagged_uuid_tests.cpp
 )
 target_link_libraries(tests PRIVATE CONAN_PKG::catch2 CONAN_PKG::gtest libbookypedia)
+
