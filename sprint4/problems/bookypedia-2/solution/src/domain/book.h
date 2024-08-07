@@ -48,12 +48,19 @@ namespace domain {
 	class BookRepository {
 	public:
 		using AuthorBooksInfo = std::vector<std::tuple<std::string, int>>;
-		using AllBooksInfo = std::vector<std::tuple<std::string, std::string, int>>;
+		using AllBooksInfo = std::vector<std::tuple<std::string, std::string, std::string, int>>;
 		virtual void Save(const Book& book, pqxx::work& w_) = 0;
+
+		virtual void EditBookTitle(const std::string& book_id, const std::string& title, pqxx::work& w_) = 0;
+		virtual void EditBookPublYear(const std::string& book_id, const int year, pqxx::work& w_) = 0;
+
+		virtual AllBooksInfo GetBooksByTitle(const std::string& title, pqxx::work& w_) = 0;
 
 		virtual AuthorBooksInfo GetBooksByAuthor(const std::string& author_id, pqxx::work& w_) = 0;
 
 		virtual AllBooksInfo GetAllBooks(pqxx::work& w_) = 0;
+
+		virtual void DeleteBook(const std::string& book_id, pqxx::work& w_) = 0;
 	protected:
 		~BookRepository() = default;
 	};

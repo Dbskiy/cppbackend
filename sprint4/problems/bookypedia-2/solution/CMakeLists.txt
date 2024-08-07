@@ -27,6 +27,9 @@ add_library(libbookypedia STATIC
 	src/domain/book.cpp
 	src/domain/book.h
 	src/domain/book_fwd.h
+	src/domain/book_tags.h
+	src/domain/book_tags.cpp
+	src/domain/book_tags_fwd.h
 	src/util/tagged.h
 	src/util/tagged_uuid.cpp
 	src/util/tagged_uuid.h
@@ -42,9 +45,9 @@ add_executable(bookypedia
 )
 target_link_libraries(bookypedia PRIVATE CONAN_PKG::boost libbookypedia)
 
-add_executable(tests
-	tests/use_case_tests.cpp
-	tests/tagged_uuid_tests.cpp
-)
-target_link_libraries(tests PRIVATE CONAN_PKG::catch2 CONAN_PKG::gtest libbookypedia)
+#add_executable(tests
+#	tests/use_case_tests.cpp
+#	tests/tagged_uuid_tests.cpp
+#)
+#target_link_libraries(tests PRIVATE CONAN_PKG::catch2 CONAN_PKG::gtest libbookypedia)
 

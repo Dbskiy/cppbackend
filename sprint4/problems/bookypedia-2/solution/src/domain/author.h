@@ -43,6 +43,8 @@ public:
     virtual AuthorsInfo GetAuthorsInfo(pqxx::work& w_) = 0;
     virtual std::optional<std::string> GetAuthorIdByName(const std::string& name, pqxx::work& w_) = 0;
     virtual std::optional<std::string> GetAuthorNameById(const std::string& id, pqxx::work& w_) = 0;
+    virtual void DeleteAuthor(const std::string& author_id, pqxx::work& w_) = 0;
+    virtual void EditAuthor(const std::string& author_id, const std::string & new_name, pqxx::work& w_) = 0;
 
 protected:
     ~AuthorRepository() = default;
