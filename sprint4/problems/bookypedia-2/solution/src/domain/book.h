@@ -49,11 +49,11 @@ namespace domain {
 	public:
 		using AuthorBooksInfo = std::vector<std::tuple<std::string, int>>;
 		using AllBooksInfo = std::vector<std::tuple<std::string, std::string, int>>;
-		virtual void Save(const Book& book) = 0;
+		virtual void Save(const Book& book, pqxx::work& w_) = 0;
 
-		virtual AuthorBooksInfo GetBooksByAuthor(AuthorId& author_id) = 0;
+		virtual AuthorBooksInfo GetBooksByAuthor(const std::string& author_id, pqxx::work& w_) = 0;
 
-		virtual AllBooksInfo GetAllBooks() = 0;
+		virtual AllBooksInfo GetAllBooks(pqxx::work& w_) = 0;
 	protected:
 		~BookRepository() = default;
 	};

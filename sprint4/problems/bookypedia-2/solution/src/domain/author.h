@@ -1,4 +1,5 @@
 #pragma once
+#include <pqxx/pqxx>
 #include <string>
 #include <vector>
 #include <tuple>
@@ -38,10 +39,10 @@ public:
     using AuthorInfo = std::tuple<std::string, std::string>;
     using AuthorsInfo = std::vector<AuthorInfo>;
 
-    virtual void Save(const Author& author) = 0;
-    virtual AuthorsInfo GetAuthorsInfo() = 0;
-    virtual std::optional<std::string> GetAuthorIdByName(const std::string& name) = 0;
-    virtual std::optional<std::string> GetAuthorNameById(const std::string& id) = 0;
+    virtual void Save(const Author& author, pqxx::work& w_) = 0;
+    virtual AuthorsInfo GetAuthorsInfo(pqxx::work& w_) = 0;
+    virtual std::optional<std::string> GetAuthorIdByName(const std::string& name, pqxx::work& w_) = 0;
+    virtual std::optional<std::string> GetAuthorNameById(const std::string& id, pqxx::work& w_) = 0;
 
 protected:
     ~AuthorRepository() = default;

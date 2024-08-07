@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
+#include <pqxx/pqxx>
 #include "../domain/author_fwd.h"
 #include "../domain/book_fwd.h"
 #include "../app/unit_of_work_factory.h"
 #include "use_cases.h"
+
 
 
 
@@ -14,14 +16,24 @@ public:
     explicit UseCasesImpl(app::UnitOfWorkFactory& unit_of_work_factory) : factory_(unit_of_work_factory) {}
 
     void SetNewUnitOfWork() override {
-        if (cur_unit_of_work_->isTransactionClosed()) {
-            cur_unit_of_work_ = factory_.CreateUnitOfWork();
+        try {
+            AcceptChanges();
         }
+        catch(...) {
+            throw;
+        }
+
+        cur_unit_of_work_ = factory_.CreateUnitOfWork();
     }
     
     void AcceptChanges() override {
-        if (cur_unit_of_work_ && !cur_unit_of_work_->isTransactionClosed()) {
-            cur_unit_of_work_->Commit();
+        if (cur_unit_of_work_) {
+            try {
+                cur_unit_of_work_->Commit();
+            }
+            catch (pqxx::sql_error& e) {
+                throw e.what();
+            }
         }
     }
 

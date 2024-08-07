@@ -79,7 +79,6 @@ bool View::AddBook(std::istream& cmd_input) const {
     try {
         use_cases_.SetNewUnitOfWork();
         if (auto params = GetBookParams(cmd_input)) {
-            //assert(!"TODO: implement book adding");
 
             use_cases_.AddBook(params->author_id, params->title, params->publication_year);
         }
