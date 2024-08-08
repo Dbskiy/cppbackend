@@ -28,7 +28,7 @@ int main(int argc, const char* argv[]) {
         w.exec(
             "CREATE TABLE IF NOT EXISTS books (id SERIAL PRIMARY KEY, title varchar(100) NOT NULL, author varchar(100) NOT NULL, year integer NOT NULL, ISBN varchar(13) UNIQUE);"_zv);
 
-	w.commit();
+        w.commit();
 
         constexpr auto tag_add_book = "add_book";
         conn.prepare(tag_add_book, "INSERT INTO books (title, author, year, ISBN) VALUES ($1, $2, $3, $4)"_zv);
@@ -48,7 +48,7 @@ int main(int argc, const char* argv[]) {
 
             if (action == "add_book") {
                 json::object result;
-		        pqxx::work c(conn);
+                pqxx::work c(conn);
                 try {
                     auto& payload = json_req.at("payload");
                     std::string title = payload.at("title").as_string().c_str();
@@ -69,24 +69,24 @@ int main(int argc, const char* argv[]) {
                 catch (...) {
                     result["result"] = false;
                 }
-		c.commit();
+                c.commit();
                 std::cout << json::serialize(result) << std::endl;
             }
             else if (action == "all_books") {
                 pqxx::read_transaction r(conn);
                 json::array books;
-                for (auto [id, title, author, year, ISBN] : r.query<int, std::string, std::string, int, std::optional<std::string>> (all_books)) {
+                for (auto [id, title, author, year, ISBN] : r.query<int, std::string, std::string, int, std::optional<std::string>>(all_books)) {
                     json::object book;
                     book["id"] = id;
                     book["title"] = title;
                     book["author"] = author;
                     book["year"] = year;
-		    if (ISBN) {
-		        book["ISBN"] = ISBN.value();		
-		    }
-		    else {
-		        book["ISBN"];
-		    }
+                    if (ISBN) {
+                        book["ISBN"] = ISBN.value();
+                    }
+                    else {
+                        book["ISBN"];
+                    }
                     //book["ISBN"] = ISBN.value_or("null");
 
                     books.push_back(book);
