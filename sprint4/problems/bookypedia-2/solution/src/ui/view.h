@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <unordered_set>
+#include <set>
 
 namespace menu {
 class Menu;
@@ -64,9 +64,10 @@ private:
     std::optional<std::tuple<std::string, detail::BookInfo>> SelectBook(std::istream& cmd_input) const;
     std::optional<std::string> EnterNewTitle(const std::string& cur_title) const;
     std::optional<int> EnterNewPublYear(const int year) const;
-    std::optional<std::unordered_set<std::string>> EnterTags() const; 
+    std::optional<std::set<std::string>> EnterTags() const; 
     std::vector<detail::AuthorInfo> GetAuthors() const;
     std::vector<std::tuple<std::string, detail::BookInfo>> GetBooks() const;
+
     std::vector<detail::BookInfo> GetAuthorBooks(const std::string& author_id) const;
 
     menu::Menu& menu_;

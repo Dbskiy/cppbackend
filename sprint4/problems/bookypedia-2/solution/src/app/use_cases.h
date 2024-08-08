@@ -3,7 +3,7 @@
 #include <tuple>
 #include <optional>
 #include <vector>
-#include <unordered_set>
+#include <set>
 
 namespace app {
 
@@ -13,7 +13,7 @@ public:
     using AuthorsInfo = std::vector<AuthorInfo>;
     using AuthorBooksInfo = std::vector<std::tuple<std::string, int>>;
     using AllBooksInfo = std::vector<std::tuple<std::string, std::string, std::string, int>>;
-    using BookTags = std::optional<std::unordered_set<std::string>>;
+    using BookTags = std::optional<std::set<std::string>>;
 
     virtual void SetNewUnitOfWork() = 0;
 
@@ -44,7 +44,7 @@ public:
 
     virtual void EditAuthor(const std::string& author_id, const std::string& new_name) = 0;
 
-    virtual void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::unordered_set<std::string>>& tags) = 0;
+    virtual void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::set<std::string>>& tags) = 0;
 
     virtual ~UseCases() = default;
 };

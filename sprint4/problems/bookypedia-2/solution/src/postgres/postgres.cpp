@@ -168,7 +168,7 @@ std::vector<std::string> BookTagRepositoryImpl::GetBookTags(const std::string& b
     return tags;
 }
 
-void BookTagRepositoryImpl::EditTags(const std::string& book_id, const std::unordered_set<std::string>& tags, pqxx::work& w_)
+void BookTagRepositoryImpl::EditTags(const std::string& book_id, const std::set<std::string>& tags, pqxx::work& w_)
 {
     DeleteBookTags(book_id, w_);
 

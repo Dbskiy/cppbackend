@@ -210,7 +210,7 @@ bool View::DeleteBook(std::istream& cmd_input) const
         use_cases_.AcceptChanges();
     }
     catch (const std::exception&) {
-        throw std::runtime_error("Failed to delete book");
+        throw std::runtime_error("Book not found");
     }
     return true;
 }
@@ -428,7 +428,7 @@ std::optional<int> View::EnterNewPublYear(const int year) const
     return std::stoi(new_year_);
 }
 
-std::optional<std::unordered_set<std::string>> View::EnterTags() const
+std::optional<std::set<std::string>> View::EnterTags() const
 {
     std::string str;
     std::vector<std::string> tags;
@@ -436,7 +436,7 @@ std::optional<std::unordered_set<std::string>> View::EnterTags() const
 
     boost::split(tags, str, boost::is_any_of(","));
     
-    std::unordered_set<std::string> result;
+    std::set<std::string> result;
     for (auto& tag : tags) {
         boost::trim(tag);
 

@@ -59,7 +59,7 @@ public:
     void DeleteAuthor(const std::string& author_id) override;
 
     void EditAuthor(const std::string& author_id, const std::string& new_name) override;
-    void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::unordered_set<std::string>>& tags) override;
+    void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::set<std::string>>& tags) override;
 
 private:
     app::UnitOfWorkFactory& factory_;

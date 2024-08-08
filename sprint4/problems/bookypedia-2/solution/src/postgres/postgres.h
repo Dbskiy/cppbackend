@@ -53,7 +53,7 @@ public:
     void Save(const std::vector<domain::BookTag>& book_tags, pqxx::work& w_) override;
 
     std::vector<std::string> GetBookTags(const std::string& book_id, pqxx::work& w_) override;
-    void EditTags(const std::string& book_id, const std::unordered_set<std::string>& tags, pqxx::work& w_) override;
+    void EditTags(const std::string& book_id, const std::set<std::string>& tags, pqxx::work& w_) override;
 
     void DeleteBookTags(const std::string book_id, pqxx::work& w_) override;
 
@@ -140,7 +140,7 @@ public:
         authors_.EditAuthor(author_id, new_name, w_);
     }
 
-    void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::unordered_set<std::string>>& tags) override {
+    void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::set<std::string>>& tags) override {
         if (title) {
             books_.EditBookTitle(book_id, *title, w_);
         }
