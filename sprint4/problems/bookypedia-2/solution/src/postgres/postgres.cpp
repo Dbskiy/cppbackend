@@ -89,7 +89,7 @@ domain::BookRepository::AllBooksInfo BookRepositoryImpl::GetBooksByTitle(const s
 {
     AllBooksInfo books_info;
 
-    auto get_all_books = "SELECT b.id b.author_id, b.title, b.publication_year FROM books b JOIN authors a ON b.author_id = a.id WHERE b.title=" 
+    auto get_all_books = "SELECT b.id, b.author_id, b.title, b.publication_year FROM books b JOIN authors a ON b.author_id = a.id WHERE b.title=" 
         + w_.quote(title) + " ORDER BY b.title ASC, a.name ASC, b.publication_year ASC";
 
     for (auto [id, author_id, title, publication_year] : w_.query<std::string, std::string, std::string, int>(get_all_books)) {
@@ -112,12 +112,23 @@ domain::BookRepository::AuthorBooksInfo BookRepositoryImpl::GetBooksByAuthor(con
     return books_info;
 }
 
+std::string BookRepositoryImpl::GetBookIdByAuthorIdAndTitle(const std::string& author_id, const std::string& title, pqxx::work& w_)
+{
+    try {
+        auto get_id = "SELECT id from books WHERE author_id=" + w_.quote(author_id) + " AND title=" + w_.quote(title);
+        return w_.query_value<std::string>(get_id);
+    }
+    catch (pqxx::sql_error& e) {
+        std::cout << e.what() << std::endl;
+    }
+}
+
 domain::BookRepository::AllBooksInfo BookRepositoryImpl::GetAllBooks(pqxx::work& w_)
 {
     AllBooksInfo all_books_info;
 
     auto get_all_books = R"(
-    SELECT b.id b.author_id, b.title, b.publication_year
+    SELECT b.id, b.author_id, b.title, b.publication_year
     FROM books b
     JOIN authors a ON b.author_id = a.id
     ORDER BY b.title ASC, a.name ASC, b.publication_year ASC
@@ -140,7 +151,7 @@ void BookTagRepositoryImpl::Save(const std::vector<domain::BookTag>& book_tags, 
 {
     for (auto& tag : book_tags)
     {
-        w_.exec_params(R"(INSERT INTO book_tags (book_id, tag) VALUES ($1, $2);)"_zv, tag.GetBookId().ToString(), tag.GetTag());
+        w_.exec_params(R"(INSERT INTO book_tags (book_id, tag) VALUES ($1, $2))"_zv, tag.GetBookId().ToString(), tag.GetTag());
     }
 }
 
@@ -157,13 +168,13 @@ std::vector<std::string> BookTagRepositoryImpl::GetBookTags(const std::string& b
     return tags;
 }
 
-void BookTagRepositoryImpl::EditTags(const std::string& book_id, const std::unordered_set<std::string>& tags, pqxx::work& w_)
+void BookTagRepositoryImpl::EditTags(const std::string& book_id, const std::set<std::string>& tags, pqxx::work& w_)
 {
     DeleteBookTags(book_id, w_);
 
     for (auto& tag : tags)
     {
-        w_.exec_params(R"(INSERT INTO book_tags (book_id, tag) VALUES ($1, $2);)"_zv, book_id, tag);
+        w_.exec_params(R"(INSERT INTO book_tags (book_id, tag) VALUES ($1, $2))"_zv, book_id, tag);
     }
 }
 
@@ -191,9 +202,11 @@ CREATE TABLE IF NOT EXISTS authors (
 )"_zv);
     work.exec(R"(
 CREATE TABLE IF NOT EXISTS book_tags (
-    book_id UUID CONSTRAINT book_id_contraint PRIMARY KEY,
-    tag varchar(30) NOT NULL
+    book_id UUID,
+    tag varchar(30) NOT NULL,
+    CONSTRAINT book_tag_unique UNIQUE (book_id, tag)
 );)"_zv);
+
 
     // коммитим изменения
     work.commit();

@@ -40,6 +40,7 @@ public:
     AllBooksInfo GetBooksByTitle(const std::string& title, pqxx::work& w_) override;
 
     AuthorBooksInfo GetBooksByAuthor(const std::string& author_id, pqxx::work& w_) override;
+    std::string GetBookIdByAuthorIdAndTitle(const std::string& author_id, const std::string& title, pqxx::work& w_) override;
 
     AllBooksInfo GetAllBooks(pqxx::work& w_) override;
 
@@ -52,7 +53,7 @@ public:
     void Save(const std::vector<domain::BookTag>& book_tags, pqxx::work& w_) override;
 
     std::vector<std::string> GetBookTags(const std::string& book_id, pqxx::work& w_) override;
-    void EditTags(const std::string& book_id, const std::unordered_set<std::string>& tags, pqxx::work& w_) override;
+    void EditTags(const std::string& book_id, const std::set<std::string>& tags, pqxx::work& w_) override;
 
     void DeleteBookTags(const std::string book_id, pqxx::work& w_) override;
 
@@ -139,7 +140,7 @@ public:
         authors_.EditAuthor(author_id, new_name, w_);
     }
 
-    void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::unordered_set<std::string>>& tags) override {
+    void EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::set<std::string>>& tags) override {
         if (title) {
             books_.EditBookTitle(book_id, *title, w_);
         }
@@ -156,8 +157,9 @@ private:
         auto books_info = books_.GetBooksByAuthor(author_id, w_);
 
         for (auto& book_info : books_info) {
-            books_tags_.DeleteBookTags(std::get<0>(book_info), w_);
-            books_.DeleteBook(std::get<0>(book_info), w_);
+            auto book_id = books_.GetBookIdByAuthorIdAndTitle(author_id, std::get<0>(book_info), w_);
+            books_tags_.DeleteBookTags(book_id, w_);
+            books_.DeleteBook(book_id, w_);
         }
     }
     pqxx::connection& connection_;

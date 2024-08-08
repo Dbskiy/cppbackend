@@ -1,7 +1,7 @@
 #pragma once
 #include <pqxx/pqxx>
 #include <string>
-#include <unordered_set>
+#include <set>
 
 #include "book.h"
 #include "../util/tagged_uuid.h"
@@ -33,7 +33,7 @@ namespace domain {
         virtual void Save(const std::vector<BookTag>& book_tags, pqxx::work& w_) = 0;
 
         virtual std::vector<std::string> GetBookTags(const std::string& book_id, pqxx::work& w_) = 0;
-        virtual void EditTags(const std::string& book_id, const std::unordered_set<std::string>& tags, pqxx::work& w_) = 0;
+        virtual void EditTags(const std::string& book_id, const std::set<std::string>& tags, pqxx::work& w_) = 0;
 
         virtual void DeleteBookTags(const std::string book_id, pqxx::work& w_) = 0;
 

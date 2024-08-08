@@ -87,7 +87,7 @@ void UseCasesImpl::EditAuthor(const std::string& author_id, const std::string& n
     cur_unit_of_work_->EditAuthor(author_id, new_name);
 }
 
-void UseCasesImpl::EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::unordered_set<std::string>>& tags)
+void UseCasesImpl::EditBook(const std::string& book_id, std::optional<std::string>& title, std::optional<int>& year, std::optional<std::set<std::string>>& tags)
 {
     cur_unit_of_work_->EditBook(book_id, title, year, tags);
 }
