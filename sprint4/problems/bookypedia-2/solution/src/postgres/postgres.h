@@ -40,6 +40,7 @@ public:
     AllBooksInfo GetBooksByTitle(const std::string& title, pqxx::work& w_) override;
 
     AuthorBooksInfo GetBooksByAuthor(const std::string& author_id, pqxx::work& w_) override;
+    std::string GetBookIdByAuthorIdAndTitle(const std::string& author_id, const std::string& title, pqxx::work& w_) override;
 
     AllBooksInfo GetAllBooks(pqxx::work& w_) override;
 
@@ -156,8 +157,9 @@ private:
         auto books_info = books_.GetBooksByAuthor(author_id, w_);
 
         for (auto& book_info : books_info) {
-            books_tags_.DeleteBookTags(std::get<0>(book_info), w_);
-            books_.DeleteBook(std::get<0>(book_info), w_);
+            auto book_id = books_.GetBookIdByAuthorIdAndTitle(author_id, std::get<0>(book_info), w_);
+            books_tags_.DeleteBookTags(book_id, w_);
+            books_.DeleteBook(book_id, w_);
         }
     }
     pqxx::connection& connection_;

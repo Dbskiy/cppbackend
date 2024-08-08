@@ -58,6 +58,8 @@ namespace domain {
 
 		virtual AuthorBooksInfo GetBooksByAuthor(const std::string& author_id, pqxx::work& w_) = 0;
 
+		virtual std::string GetBookIdByAuthorIdAndTitle(const std::string& author_id, const std::string& title, pqxx::work& w_) = 0; 
+
 		virtual AllBooksInfo GetAllBooks(pqxx::work& w_) = 0;
 
 		virtual void DeleteBook(const std::string& book_id, pqxx::work& w_) = 0;
