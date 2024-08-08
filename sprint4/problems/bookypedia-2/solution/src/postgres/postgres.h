@@ -147,8 +147,12 @@ public:
         if (year) {
             books_.EditBookPublYear(book_id, *year, w_);
         }
+
         if (tags) {
             books_tags_.EditTags(book_id, *tags, w_);
+        }
+        else {
+            books_tags_.DeleteBookTags(book_id, w_);
         }
     }
 

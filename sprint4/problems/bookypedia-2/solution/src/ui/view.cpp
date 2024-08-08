@@ -231,6 +231,9 @@ bool View::EditBook(std::istream& cmd_input) const
 
             use_cases_.EditBook(std::get<1>(*book).id, title, year, tags);
         }
+        else {
+            throw std::runtime_error("Book not found");
+        }
 
         use_cases_.AcceptChanges();
     }
@@ -240,7 +243,6 @@ bool View::EditBook(std::istream& cmd_input) const
 
     return true;
 }
-
 
 std::optional<detail::AddBookParams> View::GetBookParams(std::istream& cmd_input) const {
     detail::AddBookParams params;
@@ -346,6 +348,7 @@ std::optional<std::tuple<std::string, detail::BookInfo>> View::SelectBookFromLis
     std::string str;
     if (!std::getline(input_, str) || str.empty()) {
         return std::nullopt;
+	//throw std::runtime_error("Cancelled");
     }
 
     int book_idx;
@@ -375,41 +378,38 @@ std::optional<std::tuple<std::string, detail::BookInfo>> View::SelectBook(std::i
         //Ввод книги из списка
         return SelectBookFromList(GetBooks());
     }
-    else {
-        auto titled_book = use_cases_.GetBooksByTitle(str);
-        if (titled_book.size() > 1) {
-            std::vector<std::tuple<std::string, detail::BookInfo>> dubl_books;
+    auto titled_book = use_cases_.GetBooksByTitle(str);
+    if (titled_book.empty()) {
+        throw std::runtime_error("Invalid book title");
+    }
+    else if (titled_book.size() > 1) {
+        std::vector<std::tuple<std::string, detail::BookInfo>> dubl_books;
 
-            for (auto& book : titled_book) {
-                detail::BookInfo info{ .id = std::get<0>(book), .title = std::get<2>(book), .publication_year = std::get<3>(book) };
-                dubl_books.push_back(std::make_tuple(*use_cases_.GetAuthorNameById(std::get<1>(book)), info));
-            }
-            return SelectBookFromList(dubl_books);
+        for (auto& book : titled_book) {
+            detail::BookInfo info{ .id = std::get<0>(book), .title = std::get<2>(book), .publication_year = std::get<3>(book) };
+            dubl_books.push_back(std::make_tuple(*use_cases_.GetAuthorNameById(std::get<1>(book)), info));
+        }
+        return SelectBookFromList(dubl_books);
 
-        }
-        else if (titled_book.size() == 1) {
-            detail::BookInfo info{ .id = std::get<0>(titled_book[0]), .title = std::get<2>(titled_book[0]), .publication_year = std::get<3>(titled_book[0])};
-            return std::make_tuple(*use_cases_.GetAuthorNameById(std::get<1>(titled_book[0])), info);
-        }
-        else {
-            throw std::runtime_error("Invalid book title");
-        }
     }
 
-    return std::nullopt;
-}
+    detail::BookInfo info{ .id = std::get<0>(titled_book[0]), .title = std::get<2>(titled_book[0]), .publication_year = std::get<3>(titled_book[0])};
+    return std::make_tuple(*use_cases_.GetAuthorNameById(std::get<1>(titled_book[0])), info);
 
+    
+
+}
 std::optional<std::string> View::EnterNewTitle(const std::string& cur_title) const
 {
     output_ << "Enter new title or empty line to use the current one (" << cur_title << "):" << std::endl;
     std::string new_title_;
 
-    std::getline(input_, new_title_);
-    boost::algorithm::trim(new_title_);
+    //std::getline(input_, new_title_);
 
-    if (new_title_.empty()) {
+    if (!std::getline(input_, new_title_) || new_title_.empty()) {
         return std::nullopt;
     }
+    boost::algorithm::trim(new_title_);
     return new_title_;
 }
 
@@ -418,13 +418,13 @@ std::optional<int> View::EnterNewPublYear(const int year) const
     output_ << "Enter publication year or empty line to use the current one (" << year << "):" << std::endl;
     std::string new_year_;
 
-    std::getline(input_, new_year_);
-    boost::algorithm::trim(new_year_);
+    //std::getline(input_, new_year_);
 
-    if (new_year_.empty()) {
+    if (!std::getline(input_, new_year_) || new_year_.empty()) {
         return std::nullopt;
     }
 
+    boost::algorithm::trim(new_year_);
     return std::stoi(new_year_);
 }
 

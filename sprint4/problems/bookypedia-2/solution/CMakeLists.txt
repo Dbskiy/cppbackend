@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.11)
 project(bookypedia CXX)
 set(CMAKE_CXX_STANDARD 20)
 
+set(CONAN_DISABLE_CHECK_COMPILER ON)  # Отключаем проверку компилятора
 include(${CMAKE_BINARY_DIR}/conanbuildinfo_multi.cmake)
 conan_basic_setup(TARGETS)
 
