@@ -127,12 +127,13 @@ int main(int argc, const char* argv[]) {
             auto& state_file_path = args->state_file;
             //Если путь к сохраненному файлу не пустой
             if (state_file_path != "") {
-                if (state_file_path.find("/state/") != std::string::npos) {
-                    state_file_path = state_file_path.substr(1);
-                }
-                else if (state_file_path.find("state/") == std::string::npos) {
-                    state_file_path = "state/" + state_file_path;
-                }
+                //Проверка на наличие директории с сохр состоянием - НЕ НУЖНО
+                //if (state_file_path.find("/state/") != std::string::npos) { 
+                //    state_file_path = state_file_path.substr(1);
+                //}
+                //else if (state_file_path.find("state/") == std::string::npos) {
+                //    state_file_path = "state/" + state_file_path;
+                //}
                 state_saver_ = std::make_shared<StateSaverAndRestorer>(state_file_path);
 
                 // 8. Проверяеме возможность восстановления состояния
@@ -141,7 +142,7 @@ int main(int argc, const char* argv[]) {
                 } //в случае, если восстановление заврешилось ошибкой
                 catch (const std::exception& ex) {
                     logger::LOG(logger::GetServerStopData(EXIT_FAILURE, ex), "Failed to restore state"sv);
-                    throw;
+                    throw std::runtime_error("Invalid autosave file"s);
                 }
                 
                 // 9. Инициализируем слушателя для App_, если указан период автосохранения

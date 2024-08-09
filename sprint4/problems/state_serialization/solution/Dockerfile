@@ -38,7 +38,7 @@ USER www
 COPY --from=build /app/build/bin/game_server /app/
 COPY ./data /app/data
 COPY ./static /app/static
-COPY ./state /app/state
+#COPY ./state /app/state
 
 # Запускаем игровой сервер
-ENTRYPOINT ["/app/game_server", "-t", "100", "-c", "/app/data/config.json", "-w", "/app/static", "--randomize-spawn-points", "--state-file", "/app/state/state_save.txt", "--save-state-period", "5000"]
+ENTRYPOINT ["/app/game_server", "-t", "100", "-c", "/app/data/config.json", "-w", "/app/static", "--randomize-spawn-points"]

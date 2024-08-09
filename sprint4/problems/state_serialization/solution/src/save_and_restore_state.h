@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include "state_serialization.h"
@@ -15,8 +15,10 @@ namespace save_and_restore {
     class StateSaverAndRestorer {
     public:
         explicit StateSaverAndRestorer(const std::string& file_path)
-            : file_path_(file_path),
-            prev_state_save_path_("state/prev_save.txt") {}
+            : file_path_(file_path) 
+        {
+            prev_state_save_path_ = file_path_.parent_path() / "prev_save.txt";
+        }
 
         void SaveState(const Game& game, const Players& players) {
             RenameFile();
@@ -59,7 +61,7 @@ namespace save_and_restore {
             }
         }
 
-        const fs::path file_path_;
-        const fs::path prev_state_save_path_;
+        fs::path file_path_;
+        fs::path prev_state_save_path_;
     };
 }
