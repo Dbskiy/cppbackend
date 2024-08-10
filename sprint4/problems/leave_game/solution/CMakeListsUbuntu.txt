@@ -22,7 +22,7 @@ add_library(MyLib STATIC
 )
 
 target_include_directories(MyLib PUBLIC CONAN_PKG::boost)
-target_link_libraries(MyLib PUBLIC CONAN_PKG::boost Threads::Threads)
+target_link_libraries(MyLib PUBLIC CONAN_PKG::boost Threads::Threads CONAN_PKG::libpq CONAN_PKG::libpqxx)
 
 add_executable(game_server
 	src/main.cpp

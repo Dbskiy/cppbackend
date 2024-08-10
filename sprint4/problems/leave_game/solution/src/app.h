@@ -52,16 +52,32 @@ namespace app {
     class Player {
     public:
 
-        Player(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session)
+        Player(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session, const int entering_time)
             : dog_(dog),
-            session_(session) {};
+            session_(session),
+            entering_time_(entering_time) {};
         
         Dog::DogId GetId() const {
             return dog_->GetDogId();
         }
 
+        const int GetEnteringTime() const {
+            return entering_time_;
+        }
+
+        const std::shared_ptr<GameSession> GetSession() const {
+            return session_;
+        }
+
+        const std::shared_ptr<Dog> GetDog() const {
+            return dog_;
+        }
+
+
+    private:
         std::shared_ptr<GameSession> session_;
         std::shared_ptr<Dog> dog_;
+        const int entering_time_;
 
     };
 
@@ -78,7 +94,16 @@ namespace app {
             return players_info_;
         }
 
-        PairPlayerAndToken AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session);
+        const Token& GetTokenBySessionAndDogId(const GameSession::SessionId& session_id, const Dog::DogId& dog_id) {
+            for (auto& pair : players_info_) {
+                auto& player = pair.second;
+                if (player->GetSession()->GetId() == session_id && player->GetId() == dog_id) {
+                    return pair.first;
+                }
+            }
+        }
+
+        PairPlayerAndToken AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session, const int entering_time);
         
         std::shared_ptr<Player> FindByToken(const Token& token);
 
@@ -148,7 +173,7 @@ namespace app {
         : game_(game),
           players_(players) {};
 
-        JoinGameResult Join(const std::string& map_id, const std::string& name, const bool randomize_spawn);
+        JoinGameResult Join(const std::string& map_id, const std::string& name, const bool randomize_spawn, const int entering_time);
 
 
     private:
@@ -327,6 +352,8 @@ namespace app {
         void Tick(int tick);
 
     private:
+
+        int time_since_beginning_ = 0;
 
         std::shared_ptr<ApplicationListener> listener_;
 

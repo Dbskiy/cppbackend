@@ -1,10 +1,10 @@
 #include "app.h"
 
 namespace app {
-	Players::PairPlayerAndToken Players::AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session)
+	Players::PairPlayerAndToken Players::AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session, const int entering_time)
 	{
 		auto token = generateToken();
-		auto player = std::make_shared<Player>(dog, session);
+		auto player = std::make_shared<Player>(dog, session, entering_time);
 
 		players_info_[token] = player;
 
@@ -22,7 +22,7 @@ namespace app {
 
 
 
-	JoinGameResult JoinGameUseCase::Join(const std::string& map_id, const std::string& name, const bool randomize_spawn)
+	JoinGameResult JoinGameUseCase::Join(const std::string& map_id, const std::string& name, const bool randomize_spawn, const int entering_time)
 	{
 		if (name.empty()) {
 			throw JoinGameError{ JoinGameErrorReason::InvalidName };
@@ -32,7 +32,7 @@ namespace app {
 		Map::Id id(map_id);
 
 		if (auto session = game_.ConnectToSession(id)) {
-			auto [player, token] = players_.AddPlayer(session->AddDog(dog_name, randomize_spawn), session);
+			auto [player, token] = players_.AddPlayer(session->AddDog(dog_name, randomize_spawn), session, entering_time);
 
 			return { token, player->GetId() };
 		}
@@ -52,7 +52,7 @@ namespace app {
 			}
 
 			//получение списка персонажей в игровой сессии
-			auto& dogs = cur_player->session_->GetDogs();
+			auto& dogs = cur_player->GetSession()->GetDogs();
 			std::unordered_map<std::uint64_t, std::string> list_players;
 
 			//итерация по каждому персонажу
@@ -77,7 +77,7 @@ namespace app {
 
 			std::unordered_map<std::uint64_t, Dog::DogState> players_state;
 
-			auto& dogs = cur_player->session_->GetDogs();
+			auto& dogs = cur_player->GetSession()->GetDogs();
 
 			for (auto& dog : dogs) {
 
@@ -87,7 +87,7 @@ namespace app {
 				players_state[id] = state;
 			}
 
-			auto& all_loot = cur_player->session_->GetAllLoot();
+			auto& all_loot = cur_player->GetSession()->GetAllLoot();
 			std::unordered_map<int, Loot> loot_state;
 
 			for (int i = 0; i < all_loot.size(); i++)
@@ -107,13 +107,13 @@ namespace app {
 			return std::nullopt;
 		}
 
-		auto player_movement = PlayerMovement(cur_player->session_->GetMap()->GetDogSpeed()); 
+		auto player_movement = PlayerMovement(cur_player->GetSession()->GetMap()->GetDogSpeed());
 
 		auto it = player_movement.change_of_dir.find(move);
 
 		auto& [x, y] = it->second;
 
-		auto& state = cur_player->dog_->GetDogState();	
+		auto& state = cur_player->GetDog()->GetDogState();
 
 		state.direction = move;
 
@@ -400,7 +400,7 @@ namespace app {
 
 	JoinGameResult Application::JoinGame(const std::string& map_id, const std::string& name, const bool randomize_spawn)
 	{
-		return join_game_.Join(map_id, name, randomize_spawn);
+		return join_game_.Join(map_id, name, randomize_spawn, time_since_beginning_);
 	}
 
 	std::optional<ListPlayersResult> Application::GetPlayersList(const Token& token)
@@ -426,6 +426,9 @@ namespace app {
 		if (listener_) {
 			listener_->OnTick(tick);
 		}
+
+		//прибавляем к общему времени с начала игры
+		time_since_beginning_ += tick;
 	}
 
 }
