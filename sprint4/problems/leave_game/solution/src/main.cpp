@@ -95,6 +95,7 @@ std::string GetURLFromEnv() {
     else {
         throw std::runtime_error(DB_URL_ENV_NAME + " environment variable not found"s);
     }
+    return db_url;
 }
 
 
