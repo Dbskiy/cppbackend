@@ -1,4 +1,5 @@
 #pragma once
+#include <condition_variable>
 #include <memory>
 #include <pqxx/pqxx>
 #include <mutex>
