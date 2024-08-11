@@ -18,6 +18,8 @@ model::Map::BagCapacity DefaultBagCapacity(const json::object&);
 
 void LootConfiguration(model::Game& game, const json::object& json_object);
 
+void DogRetirementTime(model::Game& game, const json::object& json_object);
+
 model::Map::LootTypesProp LootTypesProperties(json::array loot_types);
 
 model::Map::DogSpeed DogSpeedOnTheMap(const json::object& map_json, const auto def_speed);

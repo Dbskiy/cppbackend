@@ -326,6 +326,16 @@ public:
         dogs_ = dogs;
     }
 
+    void DeleteDog(std::shared_ptr<Dog> dog_to_remove) {
+        for (size_t i = 0; i < dogs_.size(); i++)
+        {
+            if (dogs_[i]->GetDogId() == dog_to_remove->GetDogId()) {
+                dogs_.erase(dogs_.begin() + i);
+                return;
+            }
+        }
+    }
+
     const std::shared_ptr<Dog> GetDogById(Dog::DogId id) const noexcept {
         if (*id < dogs_.size()) {
             return dogs_[*id];
@@ -416,15 +426,26 @@ public:
         loot_generator_config_ = LootGeneratorConfig{ period, probability };
     }
 
+
     std::optional<LootGeneratorConfig> GetLootGeneratorConfig() const noexcept {
         return loot_generator_config_;
     }
 
+    void SetDogRetirementTime(const double dog_retirement_time) {
+        dog_retirement_time_ = dog_retirement_time;
+    }
 
+    const double GetDogRetirementTime() const {
+        return dog_retirement_time_;
+    }
+
+    int time_since_beginning_ = 0;
 
 private:
     using MapIdHasher = util::TaggedHasher<Map::Id>;
     using MapIdToIndex = std::unordered_map<Map::Id, size_t, MapIdHasher>;
+
+    double dog_retirement_time_ = 60.0;
 
     Maps maps_;
     MapIdToIndex map_id_to_index_;

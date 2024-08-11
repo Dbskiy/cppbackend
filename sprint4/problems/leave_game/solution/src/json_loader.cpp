@@ -31,6 +31,8 @@ namespace json_loader {
 
         LootConfiguration(game, json_object);
 
+
+
         const json::array& all_maps = json_object.at("maps").as_array();
 
         for (const auto& map_json : all_maps) {
@@ -84,6 +86,15 @@ namespace json_loader {
             double probability = json_object.at("lootGeneratorConfig").as_object().at("probability").as_double();
 
             game.SetLootGeneratorConfig(period, probability);
+        }
+    }
+
+    void DogRetirementTime(model::Game& game, const json::object& json_object)
+    {
+        if (json_object.contains("dogRetirementTime")) {
+            double retirement_time = json_object.at("dogRetirementTime").as_double();
+
+            game.SetDogRetirementTime(retirement_time);
         }
     }
 

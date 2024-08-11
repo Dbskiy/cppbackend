@@ -12,6 +12,7 @@
 #include "model.h"
 #include "loot_generator.h"
 #include "providers.h"
+#include "data_base.h"
 
 
 namespace beast = boost::beast;
@@ -65,6 +66,10 @@ namespace app {
             return entering_time_;
         }
 
+        void LeaveTheGame() {
+            session_->DeleteDog(dog_);
+        }
+
         const std::shared_ptr<GameSession> GetSession() const {
             return session_;
         }
@@ -73,6 +78,7 @@ namespace app {
             return dog_;
         }
 
+        int inactivity_period_ = 0;
 
     private:
         std::shared_ptr<GameSession> session_;
@@ -94,14 +100,11 @@ namespace app {
             return players_info_;
         }
 
-        const Token& GetTokenBySessionAndDogId(const GameSession::SessionId& session_id, const Dog::DogId& dog_id) {
-            for (auto& pair : players_info_) {
-                auto& player = pair.second;
-                if (player->GetSession()->GetId() == session_id && player->GetId() == dog_id) {
-                    return pair.first;
-                }
-            }
+        void DeletePlayer(Token& token) {
+            players_info_.erase(token);
         }
+
+        const Token& GetTokenBySessionAndDogId(const GameSession::SessionId& session_id, const Dog::DogId& dog_id);
 
         PairPlayerAndToken AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session, const int entering_time);
         
@@ -302,9 +305,12 @@ namespace app {
 
     class GameTime {
     public:
-        GameTime(Game& game, loot_gen::LootGenerator& loot_gen) : game_(game), loot_gen_(loot_gen) {}
+        GameTime(Game& game, Players& players, loot_gen::LootGenerator& loot_gen) 
+            : game_(game)
+            , players_(players)
+            , loot_gen_(loot_gen) {}
 
-        void MoveAllPlayers(int tick);
+        void MoveAllPlayers(int tick, const int time_since_beginning);
 
         void GenerateLoot(int tick);
 
@@ -312,31 +318,55 @@ namespace app {
 
     private:
         Game& game_;
+        Players& players_;
         loot_gen::LootGenerator loot_gen_;
+
         void ChangeCoordinates(const Map* map, Dog::DogState& state, int tick) const;
 
         void PointXOutOfRoad(Dog::DogState& state, int start_x, int end_x) const;
         void PointYOutOfRoad(Dog::DogState& state, int start_y, int end_y) const;
     };
 
-    class ApplicationListener {
+    class RetirePlayersUseCase {
     public:
-        virtual ~ApplicationListener() = default;
+        RetirePlayersUseCase(db::DataBase& data_base, Game& game, Players& players) 
+            : data_base_(data_base)
+            , game_(game)
+            , players_(players) {}
+
+        void RetirePlayers(const int tick);
+
+    private:
+        void ExcludeInactivePlayers(std::vector<Token> tokens);
+        void ChangeInactivityPeriod(const int tick);
+        db::DataBase& data_base_;
+        Game& game_;
+        Players& players_;
+    };
+
+    class ApplicationAutoSaveListener {
+    public:
+        virtual ~ApplicationAutoSaveListener() = default;
         virtual void OnTick(int tick) = 0;
     };
 
     class Application {
     public:
-        Application(Game& game, Players& players, loot_gen::LootGenerator& loot_gen)
-            : game_(game),
+        Application(db::DataBase& data_base, Game& game, Players& players, loot_gen::LootGenerator& loot_gen)
+            : data_base_(data_base),
+            game_(game),
             players_(players),
             loot_gen_(loot_gen) {}
         
         Game& game_;
         Players& players_;
 
-        void SetApplicationListener(std::shared_ptr<ApplicationListener> listener) {
-            listener_ = listener;
+        void SetAutoSaveListener(std::shared_ptr<ApplicationAutoSaveListener> listener) {
+            auto_save_listener_ = listener;
+        }
+
+        db::DataBase& GetDB() {
+            return data_base_;
         }
 
         loot_gen::LootGenerator loot_gen_;
@@ -352,15 +382,15 @@ namespace app {
         void Tick(int tick);
 
     private:
+        std::shared_ptr<ApplicationAutoSaveListener> auto_save_listener_;
 
-        int time_since_beginning_ = 0;
-
-        std::shared_ptr<ApplicationListener> listener_;
+        db::DataBase& data_base_;
 
         JoinGameUseCase join_game_{ game_, players_ };
         ListPlayersUseCase list_players_{ game_, players_ };
         GameStateUseCase game_state_{ game_, players_ };
         PlayerActionUseCase player_action{ players_ };
-        GameTime game_time_{ game_, loot_gen_ };
+        GameTime game_time_{ game_, players_, loot_gen_ };
+        RetirePlayersUseCase retire_players_{ data_base_, game_, players_ };
     };
 }

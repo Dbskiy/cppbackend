@@ -5,12 +5,12 @@
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/io_context.hpp>
 #include <iostream>
+#include <cstdlib>
 #include <thread>
 
 #include "request_handler.h"
 #include "json_loader.h"
 #include "ticker.h"
-#include "loot_generator.h"
 #include "serializing_listener.h"
 
 using namespace std::literals;
@@ -85,6 +85,19 @@ struct Args {
     return args;
 }
 
+constexpr const char DB_URL_ENV_NAME[]{ "GAME_DB_URL" };
+
+std::string GetURLFromEnv() {
+    std::string db_url;
+    if (const auto* url = std::getenv(DB_URL_ENV_NAME)) {
+        db_url = url;
+    }
+    else {
+        throw std::runtime_error(DB_URL_ENV_NAME + " environment variable not found"s);
+    }
+}
+
+
 int main(int argc, const char* argv[]) {
     try {
         if (auto args = ParseCommandLine(argc, argv)) {
@@ -120,23 +133,26 @@ int main(int argc, const char* argv[]) {
             loot_gen::LootGenerator loot_generator(interval, game.GetLootGeneratorConfig()->probability_);
 
             // 6. Создаем объект с игроками и сценариями использования игровой модели
-            app::Application App_{ game, players, loot_generator };
+
+            std::string db_url = GetURLFromEnv();
+
+            // 7 . Создаем пул соединений и объект управления базой данных 
+            db::ConnectionPool conn_pool{ 10, [db_url] {
+                auto conn = std::make_shared<pqxx::connection>(db_url);
+                return conn;
+            }};
+            db::DataBase data_base{ conn_pool };
+
+            app::Application App_{ data_base, game, players, loot_generator };
             std::shared_ptr<StateSaverAndRestorer> state_saver_;
 
-            // 7. Проверяем наличие пути к файлу автосхоранения игрового сохранения
+            // 8. Проверяем наличие пути к файлу автосхоранения игрового сохранения
             auto& state_file_path = args->state_file;
             //Если путь к сохраненному файлу не пустой
             if (state_file_path != "") {
-                //Проверка на наличие директории с сохр состоянием - НЕ НУЖНО
-                //if (state_file_path.find("/state/") != std::string::npos) { 
-                //    state_file_path = state_file_path.substr(1);
-                //}
-                //else if (state_file_path.find("state/") == std::string::npos) {
-                //    state_file_path = "state/" + state_file_path;
-                //}
                 state_saver_ = std::make_shared<StateSaverAndRestorer>(state_file_path);
 
-                // 8. Проверяеме возможность восстановления состояния
+                // 9. Проверяеме возможность восстановления состояния
                 try {
                     state_saver_->RestoreState(game, players);
                 } //в случае, если восстановление заврешилось ошибкой
@@ -145,13 +161,13 @@ int main(int argc, const char* argv[]) {
                     throw std::runtime_error("Invalid autosave file"s);
                 }
                 
-                // 9. Инициализируем слушателя для App_, если указан период автосохранения
+                // 10. Инициализируем слушателя для App_, если указан период автосохранения
                 if (args->save_state_period > 0) {
-                    App_.SetApplicationListener(std::make_shared<SerializingListener>(state_saver_, args->save_state_period, game, players));
+                    App_.SetAutoSaveListener(std::make_shared<SerializingListener>(state_saver_, args->save_state_period, game, players));
                 }
             }
 
-            // 10. Запускаем игровое время, если указан интервал
+            // 11. Запускаем игровое время, если указан интервал
             int tick_period = args->tick_period;
             if (tick_period > 0) {
                 auto ticker = std::make_shared<Ticker>(api_strand, std::chrono::milliseconds(tick_period),
@@ -162,14 +178,14 @@ int main(int argc, const char* argv[]) {
             }
 
 
-            // 11. Создаём обработчик HTTP-запросов и связываем его с моделью игры
+            // 12. Создаём обработчик HTTP-запросов и связываем его с моделью игры
             auto handler = std::make_shared<http_handler::RequestHandler>(api_strand, App_, fs::path(args->static_files_root),
                 args->tick_period, args->randomize_spawn_points);
 
 
             http_handler::LoggingRequestHandler logging_handler{ *handler };
 
-            // 12. Запустить обработчик HTTP-запросов, делегируя их обработчику запросов
+            // 13. Запустить обработчик HTTP-запросов, делегируя их обработчику запросов
 
             const auto address = net::ip::make_address("0.0.0.0");
             constexpr net::ip::port_type port = 8080;
@@ -180,12 +196,12 @@ int main(int argc, const char* argv[]) {
 
             logger::LOG(logger::GetServerStartData(port, address.to_string()), "server has started"sv);
 
-            // 13. Запускаем обработку асинхронных операций
+            // 14. Запускаем обработку асинхронных операций
             RunWorkers(std::max(1u, num_threads), [&ioc] {
                 ioc.run();
                 });
 
-            // 14. Сохраненяем состояние после заврешения работы сервера
+            // 15. Сохраненяем состояние после заврешения работы сервера
             if (state_saver_) {
                 state_saver_->SaveState(game, players);
             }

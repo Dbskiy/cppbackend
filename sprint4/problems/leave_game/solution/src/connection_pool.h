@@ -1,7 +1,9 @@
 #pragma once
 #include <memory>
 #include <pqxx/pqxx>
+#include <mutex>
 
+namespace conn_pool {
 class ConnectionPool {
     using PoolType = ConnectionPool;
     using ConnectionPtr = std::shared_ptr<pqxx::connection>;
@@ -78,3 +80,5 @@ private:
     std::vector<ConnectionPtr> pool_;
     size_t used_connections_ = 0;
 };
+
+}

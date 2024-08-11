@@ -3,7 +3,7 @@
 
 namespace serializing_listener {
     using namespace save_and_restore;
-    class SerializingListener : public ApplicationListener {
+    class SerializingListener : public ApplicationAutoSaveListener {
     public:
         SerializingListener(const std::shared_ptr<StateSaverAndRestorer>& saver, const int save_period, const model::Game& game, const app::Players& players)
             : saver_(saver),

@@ -79,6 +79,22 @@ namespace http_handler {
 
     }
 
+    std::optional<int> ExtractIntParameter(std::string_view url, std::string_view param)
+    {
+        auto pos = url.find(param);
+        if (pos != std::string_view::npos) {
+            pos += param.size();
+            auto end_pos = url.find('&', pos);
+            std::string_view value_str = url.substr(pos, end_pos - pos);
+            try {
+                return std::stoi(std::string(value_str));
+            }
+            catch (...) {
+            }
+        }
+        return std::nullopt;
+    }
+
     StringResponse ApiHandler::MakeApiResponse(const StringRequest& req)
     {
 
@@ -114,6 +130,9 @@ namespace http_handler {
                 if (config_file_path.find("action") != std::string::npos) {
                     response = PlayerAction(req, content_type);
                 }
+            }
+            else if (config_file_path.find("records") != std::string::npos) {
+                response = GetRecords(req, content_type, config_file_path);
             }
             else if (config_file_path.find("tick") != std::string::npos) {
                 if (tick_period_ == 0) {
@@ -257,6 +276,22 @@ namespace http_handler {
         return offices;
     }
 
+    json::array ApiHandler::GameRecordsInfo(std::vector<db::RetiredPlayer>& records)
+    {
+        json::array records_json;
+        for (auto& record : records) {
+            json::object record_json;
+
+            record_json["name"] = record.GetName();
+            record_json["score"] = record.GetScore();
+            record_json["playTime"] = record.GetPlayingTime();
+
+            records_json.push_back(record_json);
+        }
+
+        return records_json;
+    }
+
     StringResponse ApiHandler::MakeUnauthorizedError(const unsigned http_version, const std::string_view content_type, app::AuthorizationErrorReason reason)
     {
         std::string code;
@@ -389,6 +424,34 @@ namespace http_handler {
             return MakeUnauthorizedError(req.version(), content_type, app::AuthorizationErrorReason::TokenNotFound);
 
         }, req, content_type);
+    }
+
+    StringResponse ApiHandler::GetRecords(const StringRequest& req, const std::string_view content_type, const std::string_view path)
+    {
+        if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::GET_HEAD, req.version(), content_type)) {
+            return *invalid_method;
+        }
+        
+        int start_idx = 0;
+        int max_items = 100;
+
+        if (auto start_param = ExtractIntParameter(path, "start="); start_param.has_value()) {
+            start_idx = start_param.value();
+        }
+
+        if (auto max_items_param = ExtractIntParameter(path, "maxItems="); max_items_param.has_value()) {
+            max_items = max_items_param.value();
+            if (max_items < 0 || max_items > 100) {
+                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid max_items element"),
+                    req.version(), content_type);
+            }
+        }
+
+        auto records = App_.GetDB().GetRecords(start_idx, max_items);
+        auto response_body = GameRecordsInfo(records);
+
+
+        return MakeStringResponse(http::status::ok, json::serialize(response_body), req.version(), content_type);
     }
 
     json::object ApiHandler::GetJsonPlayersState(const std::unordered_map<std::uint64_t, Dog::DogState>& players_state)

@@ -167,28 +167,40 @@ namespace app_serialization {
 	public:
 		PlayerRepr() = default;
 
-		explicit PlayerRepr(model::GameSession::SessionId session_id, model::Dog::DogId dog_id)
+		explicit PlayerRepr(model::GameSession::SessionId session_id, model::Dog::DogId dog_id, int entering_time, int inactivity_period)
 			: 
 			session_id_(session_id),
-			dog_id_(dog_id) {}
+			dog_id_(dog_id),
+			entering_time_(entering_time),
+			inactivity_period_(inactivity_period) {}
 
 
 		[[nodiscard]] std::shared_ptr<Player> Restore(const model::Game& game) const {
 			auto session = game.FindGameSession(session_id_);
 			auto dog = session->GetDogById(dog_id_);
 
-			return std::make_shared<Player>(dog, session);
+			int entering_time = entering_time_;
+
+			int inactivity_period = inactivity_period_;
+
+			std::shared_ptr<Player> player = std::make_shared<Player>(dog, session, entering_time);
+			player->inactivity_period_ = inactivity_period;
+			return player;
 		}
 
 		template <typename Archive>
 		void serialize(Archive& ar, [[maybe_unused]] const unsigned version) {
 			ar& (*session_id_);
 			ar& (*dog_id_);
+			ar& entering_time_;
+			ar& inactivity_period_;
 		}
 
 	private:
 		model::GameSession::SessionId session_id_{ 0u };
 		model::Dog::DogId dog_id_ = Dog::DogId{ 0u };
+		int entering_time_ = 0;
+		int inactivity_period_ = 0;
 	};
 
 	class PlayersRepr {
@@ -200,7 +212,8 @@ namespace app_serialization {
 
 			for (auto& pair : players_info) {
 				tokens_.push_back(*pair.first);
-				players_repr_.push_back(PlayerRepr(pair.second->session_->GetId(), pair.second->GetId()));
+				players_repr_.push_back(PlayerRepr(pair.second->GetSession()->GetId(),
+					pair.second->GetId(), pair.second->GetEnteringTime(), pair.second->inactivity_period_));
 			}
 		}
 
@@ -228,4 +241,5 @@ namespace app_serialization {
 		std::vector<PlayerRepr> players_repr_;
 
 	};
+
 }

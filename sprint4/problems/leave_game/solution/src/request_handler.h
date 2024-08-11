@@ -40,6 +40,8 @@ std::string ErrorResponse(const std::string&, const std::string&);
     
 std::string_view DefineContentType(const std::string_view);
 
+std::optional<int> ExtractIntParameter(std::string_view url, std::string_view param);
+
 struct Allow {
     Allow() = delete;
     constexpr static std::string_view POST = "POST"sv;
@@ -117,6 +119,8 @@ private:
 
     json::array OfficesProperties(const model::Map*);
 
+    json::array GameRecordsInfo(std::vector<db::RetiredPlayer>& records);
+
     StringResponse MakeUnauthorizedError(const unsigned, const std::string_view, app::AuthorizationErrorReason);
 
     std::optional<app::Token> TryExtractToken(const StringRequest& req);
@@ -131,11 +135,13 @@ private:
         }
     }
 
-    StringResponse JoinGame(const StringRequest& req, const std::string_view content_type);
+    StringResponse JoinGame(const StringRequest&, const std::string_view);
     
     StringResponse GetPlayers(const StringRequest&, const std::string_view);
     
     StringResponse PlayerAction(const StringRequest&, const std::string_view);
+
+    StringResponse GetRecords(const StringRequest&, const std::string_view, const std::string_view);
 
     json::object GetJsonPlayersState(const std::unordered_map<std::uint64_t, Dog::DogState>& players_state);
 

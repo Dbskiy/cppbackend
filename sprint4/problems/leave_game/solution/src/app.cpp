@@ -1,6 +1,15 @@
 #include "app.h"
 
 namespace app {
+	const Token& Players::GetTokenBySessionAndDogId(const GameSession::SessionId& session_id, const Dog::DogId& dog_id)
+	{
+		for (auto& pair : players_info_) {
+			auto& player = pair.second;
+			if (player->GetSession()->GetId() == session_id && player->GetId() == dog_id) {
+				return pair.first;
+			}
+		}
+	}
 	Players::PairPlayerAndToken Players::AddPlayer(std::shared_ptr<Dog> dog, std::shared_ptr<GameSession> session, const int entering_time)
 	{
 		auto token = generateToken();
@@ -285,7 +294,7 @@ namespace app {
 		state.bag.FreeBag();
 	}
 
-	void GameTime::MoveAllPlayers(int tick)
+	void GameTime::MoveAllPlayers(int tick, const int time_since_beginning)
 	{
 		auto& sessions = game_.GetSessions();
 
@@ -294,8 +303,11 @@ namespace app {
 			const Map* map = session->GetMap();
 
 			for (auto& dog : dogs) {
-				Dog::DogState& state = dog->GetDogState();
+				const Token& token = players_.GetTokenBySessionAndDogId(session->GetId(), dog->GetDogId());
 
+				auto player = players_.FindByToken(token);
+
+				Dog::DogState& state = dog->GetDogState();;
 				ChangeCoordinates(map, state, tick);
 			}
 		}
@@ -398,9 +410,61 @@ namespace app {
 		}
 	}
 
+
+	void RetirePlayersUseCase::RetirePlayers(const int tick)
+	{
+		const double ratio_of_ms_to_s = 1000.0;
+
+		ChangeInactivityPeriod(tick);
+
+		std::vector<Token> tokens_to_delete;
+		std::vector<db::RetiredPlayer> retired_players;
+
+		for (auto& pair : players_.GetPlayersInfo()) {
+			auto& player = pair.second;
+
+			if (static_cast<double>(player->inactivity_period_) >= game_.GetDogRetirementTime() * ratio_of_ms_to_s) {
+				std::string dog_name = *player->GetDog()->GetDogName();
+				int score = player->GetDog()->GetDogState().score;
+				double playing_time_ = static_cast<double>(game_.time_since_beginning_ - player->GetEnteringTime()) / ratio_of_ms_to_s;
+
+				tokens_to_delete.push_back(pair.first);
+				retired_players.push_back({ dog_name, score, playing_time_ });
+			}
+		}
+
+		if (!tokens_to_delete.empty() && !retired_players.empty()) {
+			ExcludeInactivePlayers(std::move(tokens_to_delete));
+			data_base_.RetirePlayers(std::move(retired_players));
+		}
+	}
+
+	void RetirePlayersUseCase::ExcludeInactivePlayers(std::vector<Token> tokens)
+	{
+		for (auto& token : tokens) {
+			players_.FindByToken(token)->LeaveTheGame();
+			players_.DeletePlayer(token);
+		}
+	}
+
+	void RetirePlayersUseCase::ChangeInactivityPeriod(const int tick)
+	{
+		for (auto& pair : players_.GetPlayersInfo()) {
+			auto& player = pair.second;
+
+			auto dog_speed = player->GetDog()->GetDogState().speed;
+			if (dog_speed.Vx == 0.0 && dog_speed.Vy == 0.0) {
+				player->inactivity_period_ += tick;
+			}
+			else {
+				player->inactivity_period_ = 0;
+			}
+		}
+	}
+
 	JoinGameResult Application::JoinGame(const std::string& map_id, const std::string& name, const bool randomize_spawn)
 	{
-		return join_game_.Join(map_id, name, randomize_spawn, time_since_beginning_);
+		return join_game_.Join(map_id, name, randomize_spawn, game_.time_since_beginning_);
 	}
 
 	std::optional<ListPlayersResult> Application::GetPlayersList(const Token& token)
@@ -419,17 +483,21 @@ namespace app {
 
 	void Application::Tick(int tick)
 	{
-		game_time_.MoveAllPlayers(tick);
+		//прибавляем к общему времени с начала игры
+		game_.time_since_beginning_ += tick;
+
+		retire_players_.RetirePlayers(tick);
+
+		game_time_.MoveAllPlayers(tick, game_.time_since_beginning_);
 		game_time_.GenerateLoot(tick);
 		game_time_.GatheringAndDeliviring(tick);
 
-		if (listener_) {
-			listener_->OnTick(tick);
+		if (auto_save_listener_) {
+			auto_save_listener_->OnTick(tick);
 		}
 
-		//прибавляем к общему времени с начала игры
-		time_since_beginning_ += tick;
 	}
+
 
 }
 
