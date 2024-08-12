@@ -18,7 +18,7 @@ namespace db {
 			: id_(std::move(id))
 			, name_(std::move(name))
 			, score_(std::move(score))
-			, playing_time_(std::move(playing_time_))
+			, playing_time_(std::move(playing_time))
 		{}
 
 		const PlayerId& GetId() {
