@@ -430,19 +430,9 @@ namespace app {
 		}
 
 		if (!tokens_to_delete.empty() && !retired_players.empty()) {
-			try {
-				ExcludeInactivePlayers(tokens_to_delete);
-			}
-			catch (std::exception& ex) {
-				throw ex.what();
-			}
+			ExcludeInactivePlayers(tokens_to_delete);
 
-			try {
-				data_base_.RetirePlayers(retired_players);
-			}
-			catch (std::exception& ex) {
-				throw ex.what();
-			}
+			data_base_.RetirePlayers(retired_players);
 		}
 	}
 

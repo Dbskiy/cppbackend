@@ -139,7 +139,6 @@ namespace http_handler {
                     response = TimeControl(req, content_type);
                 }
                 else {
-                    std::cout << tick_period_ << std::endl;
                     response = MakeStringResponse(http::status::bad_request, ErrorResponse("badRequest", "Invalid endpoint"), http_version, content_type);
                 }
             }
@@ -441,7 +440,7 @@ namespace http_handler {
 
         if (auto max_items_param = ExtractIntParameter(path, "maxItems="); max_items_param.has_value()) {
             max_items = max_items_param.value();
-            if (max_items < 0 || max_items > 100) {
+            if (max_items > 100) {
                 return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid max items element"),
                     req.version(), content_type);
             }
@@ -539,31 +538,31 @@ namespace http_handler {
         }, req, content_type);
     }
 
-    StringResponse ApiHandler::TimeControl(const StringRequest& req, const std::string_view content_type)
-    {
-        if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::POST, req.version(), content_type)) {
-            return *invalid_method;
-        }
-        json::error_code ec;
+     StringResponse ApiHandler::TimeControl(const StringRequest& req, const std::string_view content_type)
+     {
+         if (auto invalid_method = Allow::MethodNotAllowed(req.method(), Allow::POST, req.version(), content_type)) {
+             return *invalid_method;
+         }
+         json::error_code ec;
 
-        auto json_body = json::parse(req.body(), ec);
+     	 auto json_body = json::parse(req.body(), ec);
 
-        if (ec || !json_body.as_object().contains("timeDelta")) {
-            return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
-                req.version(), content_type);
-        }
-        
-        auto it = json_body.as_object().find("timeDelta");
-        if (it == json_body.as_object().end() || it->value().is_bool() || it->value().is_double() || it->value().is_string() || it->value().is_null()) {
-            return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
-                req.version(), content_type);
-        }
+         if (ec || !json_body.as_object().contains("timeDelta")) {
+             return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
+                 req.version(), content_type);
+         }
+     
+         auto it = json_body.as_object().find("timeDelta");
+         if (it == json_body.as_object().end() || it->value().is_bool() || it->value().is_double() || it->value().is_string() || it->value().is_null()) {
+             return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Failed to parse tick request JSON"),
+                 req.version(), content_type);
+         }
 
-        auto tick = it->value().as_int64();
+         auto tick = it->value().as_int64();
 
-        App_.Tick(tick);
+         App_.Tick(tick);
 
-        return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
+         return MakeStringResponse(http::status::ok, "{}", req.version(), content_type);
     }
 
     response_body RequestHandler::MakeStaticFileResponse(const std::string_view static_file_path, const fs::path& root_path, const unsigned http_version)

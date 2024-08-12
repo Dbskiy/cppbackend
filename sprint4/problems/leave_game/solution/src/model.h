@@ -283,7 +283,7 @@ public:
         }
     };
 
-    DogId GetDogId() const noexcept {
+    DogId& GetDogId() noexcept {
         return dog_id_;
     }
 
@@ -337,8 +337,10 @@ public:
     }
 
     const std::shared_ptr<Dog> GetDogById(Dog::DogId id) const noexcept {
-        if (*id < dogs_.size()) {
-            return dogs_[*id];
+        for (auto& dog : dogs_) {
+            if (id == dog->GetDogId()) {
+                return dog;
+            }
         }
         return nullptr;
     }

@@ -101,6 +101,8 @@ std::string GetURLFromEnv() {
 
 int main(int argc, const char* argv[]) {
     try {
+        std::string db_url = GetURLFromEnv();
+
         if (auto args = ParseCommandLine(argc, argv)) {
 
             //если параметра нет, то значение будет false => спавн в начале карты
@@ -134,8 +136,7 @@ int main(int argc, const char* argv[]) {
             loot_gen::LootGenerator loot_generator(interval, game.GetLootGeneratorConfig()->probability_);
 
             // 6. Создаем объект с игроками и сценариями использования игровой модели
-
-            std::string db_url = GetURLFromEnv();
+            //std::string db_url = GetURLFromEnv();
 
             // 7 . Создаем пул соединений и объект управления базой данных 
             db::ConnectionPool conn_pool{ 10, [db_url] {
