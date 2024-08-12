@@ -127,11 +127,6 @@ namespace http_server {
 
     private:
         void AsyncRunSession(tcp::socket&& socket) {
-
-            //присвоение статической переменной client_ip адрес клиента
-
-            //std::cout << "Endpoint: " << socket.remote_endpoint().address().to_string() << std::endl; ////получение ip клиента
-            
             logger::client_ip = socket.remote_endpoint().address().to_string();
             std::make_shared<Session<RequestHandler>>(std::move(socket), request_handler_)->Run();
         }
@@ -157,7 +152,7 @@ namespace http_server {
             using namespace std::literals;
 
             if (ec) {
-                return ReportError(ec, "accept"sv); //log!!!!
+                return ReportError(ec, "accept"sv);
             }
 
             // Асинхронно обрабатываем сессию

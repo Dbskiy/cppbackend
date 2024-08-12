@@ -29,8 +29,6 @@ namespace app {
 		return players_info_[token];
 	}
 
-
-
 	JoinGameResult JoinGameUseCase::Join(const std::string& map_id, const std::string& name, const bool randomize_spawn, const int entering_time)
 	{
 		if (name.empty()) {
@@ -49,8 +47,6 @@ namespace app {
 			throw JoinGameError{ JoinGameErrorReason::InvalidMap };
 		}
 	}
-
-
 
 	std::optional<ListPlayersResult> ListPlayersUseCase::GetPlayersList(const Token& token)
 	{
@@ -480,7 +476,6 @@ namespace app {
 
 	void Application::Tick(int tick)
 	{
-		//прибавляем к общему времени с начала игры
 		game_.time_since_beginning_ += tick;
 
 		retire_players_.RetirePlayers(tick);
@@ -494,8 +489,6 @@ namespace app {
 		}
 
 	}
-
-
 }
 
 	

@@ -35,15 +35,10 @@ namespace static_content {
 
     bool IsSubPath(fs::path path, fs::path base)
     {
-        // Приводим оба пути к каноничному виду (без . и ..)
         path = fs::weakly_canonical(path);
 
         base = fs::weakly_canonical(base);
 
-        //std::cout << "Root path: " << base.string() << std::endl; ////для отладки
-
-
-        // Проверяем, что все компоненты base содержатся внутри path
         for (auto b = base.begin(), p = path.begin(); b != base.end(); ++b, ++p) {
             if (p == path.end() || *p != *b) {
                 return false;

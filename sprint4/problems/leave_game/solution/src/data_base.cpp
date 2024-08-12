@@ -6,14 +6,12 @@ namespace db {
 		auto conn = conn_pool_.GetConnection();
 		pqxx::work w_{ *conn };
 
-		//создание таблицы рекордов
 		w_.exec(R"(CREATE TABLE IF NOT EXISTS retired_players (
 			id UUID PRIMARY KEY,
 			name varchar(100) NOT NULL,
 			score integer NOT NULL,
 			playTime float8 NOT NULL );)"_zv);
 
-		//создание индекса для быстрой сортировки
 		w_.exec(R"(CREATE INDEX IF NOT EXISTS idx_retired_players 
 				ON retired_players (score DESC, playTime ASC, name ASC);)"_zv);
 

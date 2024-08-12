@@ -16,7 +16,6 @@ namespace loot_extra_data
 			SetLootProperties(loot_types);
 		};
 
-
 		const std::vector<std::unordered_map<std::string, loot_variant>>& GetLootTypesProp() const {
 			return loot_types_prop_;
 		}

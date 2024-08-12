@@ -43,7 +43,6 @@ public:
         PoolType* pool_;
     };
 
-    // ConnectionFactory is a functional object returning std::shared_ptr<pqxx::connection>
     template <typename ConnectionFactory>
     ConnectionPool(size_t capacity, ConnectionFactory&& connection_factory) {
         pool_.reserve(capacity);
