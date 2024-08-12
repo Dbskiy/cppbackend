@@ -303,10 +303,6 @@ namespace app {
 			const Map* map = session->GetMap();
 
 			for (auto& dog : dogs) {
-				const Token& token = players_.GetTokenBySessionAndDogId(session->GetId(), dog->GetDogId());
-
-				auto player = players_.FindByToken(token);
-
 				Dog::DogState& state = dog->GetDogState();;
 				ChangeCoordinates(map, state, tick);
 			}
@@ -429,17 +425,28 @@ namespace app {
 				double playing_time_ = static_cast<double>(game_.time_since_beginning_ - player->GetEnteringTime()) / ratio_of_ms_to_s;
 
 				tokens_to_delete.push_back(pair.first);
-				retired_players.push_back({ dog_name, score, playing_time_ });
+				retired_players.push_back({ db::PlayerId::New(), dog_name, score, playing_time_ });
 			}
 		}
 
 		if (!tokens_to_delete.empty() && !retired_players.empty()) {
-			ExcludeInactivePlayers(std::move(tokens_to_delete));
-			data_base_.RetirePlayers(std::move(retired_players));
+			try {
+				ExcludeInactivePlayers(tokens_to_delete);
+			}
+			catch (std::exception& ex) {
+				throw ex.what();
+			}
+
+			try {
+				data_base_.RetirePlayers(retired_players);
+			}
+			catch (std::exception& ex) {
+				throw ex.what();
+			}
 		}
 	}
 
-	void RetirePlayersUseCase::ExcludeInactivePlayers(std::vector<Token> tokens)
+	void RetirePlayersUseCase::ExcludeInactivePlayers(std::vector<Token>& tokens)
 	{
 		for (auto& token : tokens) {
 			players_.FindByToken(token)->LeaveTheGame();

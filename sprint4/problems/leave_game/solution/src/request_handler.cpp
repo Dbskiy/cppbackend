@@ -442,7 +442,7 @@ namespace http_handler {
         if (auto max_items_param = ExtractIntParameter(path, "maxItems="); max_items_param.has_value()) {
             max_items = max_items_param.value();
             if (max_items < 0 || max_items > 100) {
-                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid max_items element"),
+                return MakeStringResponse(http::status::bad_request, ErrorResponse("invalidArgument", "Invalid max items element"),
                     req.version(), content_type);
             }
         }

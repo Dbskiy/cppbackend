@@ -31,7 +31,7 @@ namespace json_loader {
 
         LootConfiguration(game, json_object);
 
-
+        DogRetirementTime(game, json_object);
 
         const json::array& all_maps = json_object.at("maps").as_array();
 

@@ -337,7 +337,7 @@ namespace app {
         void RetirePlayers(const int tick);
 
     private:
-        void ExcludeInactivePlayers(std::vector<Token> tokens);
+        void ExcludeInactivePlayers(std::vector<Token>& tokens);
         void ChangeInactivityPeriod(const int tick);
         db::DataBase& data_base_;
         Game& game_;

@@ -53,6 +53,8 @@ add_executable(game_server
     src/connection_pool.h
     src/data_base.cpp
     src/data_base.h
+    src/tagged_uuid.cpp
+    src/tagged_uuid.h
 )
 
 target_link_libraries(game_server PRIVATE MyLib)
