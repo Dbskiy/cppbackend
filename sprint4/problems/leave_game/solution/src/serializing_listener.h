@@ -11,14 +11,7 @@ namespace serializing_listener {
             game_(game),
             players_(players) {}
 
-        void OnTick(int tick) override {
-            time_since_save_ += tick;
-
-            if (time_since_save_ >= save_period_) {
-                saver_->SaveState(game_, players_);
-                time_since_save_ = 0;
-            }
-        }
+        void OnTick(int tick) override;
 
     private:
         const int save_period_;

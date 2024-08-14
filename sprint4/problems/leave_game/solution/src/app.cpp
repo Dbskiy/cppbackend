@@ -50,58 +50,58 @@ namespace app {
 
 	std::optional<ListPlayersResult> ListPlayersUseCase::GetPlayersList(const Token& token)
 	{
-			auto cur_player = players_.FindByToken(token);
+		auto cur_player = players_.FindByToken(token);
 
-			if (cur_player == nullptr) {
-				return std::nullopt;
-			}
+		if (cur_player == nullptr) {
+			return std::nullopt;
+		}
 
-			//получение списка персонажей в игровой сессии
-			auto& dogs = cur_player->GetSession()->GetDogs();
-			std::unordered_map<std::uint64_t, std::string> list_players;
+		//получение списка персонажей в игровой сессии
+		auto& dogs = cur_player->GetSession()->GetDogs();
+		std::unordered_map<std::uint64_t, std::string> list_players;
 
-			//итерация по каждому персонажу
-			for (auto& dog : dogs) {
-				std::string name = *dog->GetDogName();
+		//итерация по каждому персонажу
+		for (const auto& dog : dogs) {
+			std::string name = *dog->GetDogName();
 
-				std::uint64_t id = *dog->GetDogId();
-				list_players[id] = name;
-			}
+			std::uint64_t id = *dog->GetDogId();
+			list_players[id] = name;
+		}
 
-			return { list_players };
+		return { list_players };
 
 	}
 
 	std::optional<GameStateResult> GameStateUseCase::GameState(const Token& token)
 	{
-			auto cur_player = players_.FindByToken(token);
+		auto cur_player = players_.FindByToken(token);
 
-			if (cur_player == nullptr) {
-				return std::nullopt;
-			}
+		if (cur_player == nullptr) {
+			return std::nullopt;
+		}
 
-			std::unordered_map<std::uint64_t, Dog::DogState> players_state;
+		std::unordered_map<std::uint64_t, Dog::DogState> players_state;
 
-			auto& dogs = cur_player->GetSession()->GetDogs();
+		auto& dogs = cur_player->GetSession()->GetDogs();
 
-			for (auto& dog : dogs) {
+		for (const auto& dog : dogs) {
 
-				auto& state = dog->GetDogState();
+			auto& state = dog->GetDogState();
 
-				auto id = *dog->GetDogId();
-				players_state[id] = state;
-			}
+			auto id = *dog->GetDogId();
+			players_state[id] = state;
+		}
 
-			auto& all_loot = cur_player->GetSession()->GetAllLoot();
-			std::unordered_map<int, Loot> loot_state;
+		auto& all_loot = cur_player->GetSession()->GetAllLoot();
+		std::unordered_map<int, Loot> loot_state;
 
-			for (int i = 0; i < all_loot.size(); i++)
-			{
-				loot_state[i] = all_loot[i];
-			}
+		for (int i = 0; i < all_loot.size(); i++)
+		{
+			loot_state[i] = all_loot[i];
+		}
 
-			return GameStateResult{ players_state, loot_state };
-			
+		return GameStateResult{ players_state, loot_state };
+
 	}
 
 	std::optional<std::string_view> PlayerActionUseCase::MovePlayer(const Token& token, const std::string& move)
@@ -139,33 +139,33 @@ namespace app {
 
 		SetCorrectChronology(g_events, d_events, dogs_);
 
-		size_t i = 0, j = 0;
+		size_t g_ev = 0, d_ev = 0;
 
 		while (true) {
-			if (i < g_events.size() && j < d_events.size()) {
-				if (g_events[i].time == d_events[j].time) {
-					BringLootToTheBase(d_events[j].deliverer_id);
-					PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
+			if (g_ev < g_events.size() && d_ev < d_events.size()) {
+				if (g_events[g_ev].time == d_events[d_ev].time) {
+					BringLootToTheBase(d_events[d_ev].deliverer_id);
+					PutInTheBag(g_events[g_ev].gatherer_id, g_events[g_ev].item_id);
 
-					++i;
-					++j;
+					++g_ev;
+					++d_ev;
 				}
-				else if (g_events[i].time < d_events[j].time) {
-					PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
-					++i;
+				else if (g_events[g_ev].time < d_events[d_ev].time) {
+					PutInTheBag(g_events[g_ev].gatherer_id, g_events[g_ev].item_id);
+					++g_ev;
 				}
 				else {
-					BringLootToTheBase(d_events[j].deliverer_id);
-					++j;
+					BringLootToTheBase(d_events[d_ev].deliverer_id);
+					++d_ev;
 				}
 			}
-			else if (i < g_events.size()) {
-				PutInTheBag(g_events[i].gatherer_id, g_events[i].item_id);
-				++i;
+			else if (g_ev < g_events.size()) {
+				PutInTheBag(g_events[g_ev].gatherer_id, g_events[g_ev].item_id);
+				++g_ev;
 			}
-			else if (j < d_events.size()) {
-				BringLootToTheBase(d_events[j].deliverer_id);
-				++j;
+			else if (d_ev < d_events.size()) {
+				BringLootToTheBase(d_events[d_ev].deliverer_id);
+				++d_ev;
 			}
 			else {
 				break;
@@ -201,7 +201,7 @@ namespace app {
 		}
 
 		return provider;
-		
+
 	}
 
 	DelivererProvider GatheringAndDelivering::GetDelivererProvider()
@@ -233,9 +233,9 @@ namespace app {
 		return provider;
 	}
 
-	void GatheringAndDelivering::SetCorrectChronology(std::vector<GatheringEvent>& g_events, 
+	void GatheringAndDelivering::SetCorrectChronology(std::vector<GatheringEvent>& g_events,
 		std::vector<DeliveringEvent>& d_events, const GameSession::Dogs& dogs) const
-	{ 
+	{
 		for (auto& g_event : g_events) {
 			auto& state = dogs[g_event.gatherer_id]->GetDogState();
 
@@ -298,7 +298,7 @@ namespace app {
 			auto& dogs = session->GetDogs();
 			const Map* map = session->GetMap();
 
-			for (auto& dog : dogs) {
+			for (const auto& dog : dogs) {
 				Dog::DogState& state = dog->GetDogState();;
 				ChangeCoordinates(map, state, tick);
 			}
@@ -319,7 +319,7 @@ namespace app {
 
 	void GameTime::GatheringAndDeliviring(int tick)
 	{
-		for (auto& session : game_.GetSessions()) {
+		for (const auto& session : game_.GetSessions()) {
 			GatheringAndDelivering gath_and_del(session, tick);
 
 			gath_and_del.GatherAndDeliver();
@@ -412,7 +412,7 @@ namespace app {
 		std::vector<Token> tokens_to_delete;
 		std::vector<db::RetiredPlayer> retired_players;
 
-		for (auto& pair : players_.GetPlayersInfo()) {
+		for (const auto& pair : players_.GetPlayersInfo()) {
 			auto& player = pair.second;
 
 			if (static_cast<double>(player->inactivity_period_) >= game_.GetDogRetirementTime() * ratio_of_ms_to_s) {
@@ -491,4 +491,4 @@ namespace app {
 	}
 }
 
-	
+

@@ -245,7 +245,7 @@ namespace app {
 
     class PlayerMovement {
     public:
-        PlayerMovement(const Map::DogSpeed& speed)
+        explicit PlayerMovement(const Map::DogSpeed& speed)
             : change_of_dir{
                 {"L", {0.0 - *speed, 0.0}},
                 {"R", {*speed, 0.0}},
@@ -260,7 +260,7 @@ namespace app {
 
     class PlayerActionUseCase {
     public:
-        PlayerActionUseCase(Players& players)
+        explicit PlayerActionUseCase(Players& players)
         : players_(players) {}
 
         std::optional<std::string_view> MovePlayer(const Token&, const std::string&);

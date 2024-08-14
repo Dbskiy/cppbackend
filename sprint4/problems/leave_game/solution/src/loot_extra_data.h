@@ -12,7 +12,7 @@ namespace loot_extra_data
 	using loot_variant = std::variant<std::string, int64_t, double>;
 	class LootExtraData {
 	public:
-		LootExtraData(const json::array& loot_types) {
+		explicit LootExtraData(const json::array& loot_types) {
 			SetLootProperties(loot_types);
 		};
 

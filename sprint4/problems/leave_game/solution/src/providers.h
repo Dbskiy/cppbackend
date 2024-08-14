@@ -20,8 +20,11 @@ namespace providers {
 		}
 
 		Item GetItem(size_t idx) const override {
-			if (idx < items_.size()) return items_[idx];
-			return Item{};
+			try {
+				return items_.at(idx);
+			} catch(const std::out_of_range&) {
+				return Item{};
+			}
 		}
 
 		size_t GatherersCount() const override {
@@ -29,8 +32,12 @@ namespace providers {
 		}
 
 		Gatherer GetGatherer(size_t idx) const override {
-			if (idx < gatherers_.size()) return gatherers_[idx];
-			return Gatherer{};
+			try {
+				return gatherers_.at(idx);
+			}
+			catch (const std::out_of_range&) {
+				return Gatherer{};
+			}
 		}
 
 
@@ -53,8 +60,12 @@ namespace providers {
 			return bases_.size();
 		}
 		Base GetBase(size_t idx) const override {
-			if (idx < bases_.size()) return bases_[idx];
-			return Base{};
+			try {
+				return bases_.at(idx);
+			}
+			catch (const std::out_of_range&) {
+				return Base{};
+			}
 		}
 		
 		size_t DeliverersCount() const override {
@@ -62,8 +73,12 @@ namespace providers {
 		}
 
 		Gatherer GetDeliverer(size_t idx) const override {
-			if (idx < deliverers_.size()) return deliverers_[idx];
-			return Gatherer{};
+			try {
+				return deliverers_.at(idx);
+			}
+			catch (const std::out_of_range&) {
+				return Gatherer{};
+			}
 		}
 		
 	private:

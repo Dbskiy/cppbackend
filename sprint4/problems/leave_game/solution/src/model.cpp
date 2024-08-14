@@ -51,6 +51,17 @@ std::tuple<double, double> Road::GetRandomPoint() const
     return std::make_tuple(dis_x(gen), dis_y(gen));
 }
 
+const Road& Map::GetRandomRoad() const
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis_road(0, roads_.size() - 1);
+
+    int road_index = dis_road(gen);
+
+    return roads_[road_index];
+}
+
 std::vector<Road> Map::FindRoadsAt(double x, double y) const
 {
     std::vector<Road> result;
@@ -94,6 +105,36 @@ void Map::AddOffice(Office office) {
         offices_.pop_back();
         throw;
     }
+}
+
+void GameSession::DeleteDog(std::shared_ptr<Dog> dog_to_remove)
+{
+    for (size_t i = 0; i < dogs_.size(); i++)
+    {
+        if (dogs_[i]->GetDogId() == dog_to_remove->GetDogId()) {
+            dogs_.erase(dogs_.begin() + i);
+            return;
+        }
+    }
+}
+
+const std::shared_ptr<Dog> GameSession::GetDogById(Dog::DogId id) const noexcept
+{
+    for (auto& dog : dogs_) {
+        if (id == dog->GetDogId()) {
+            return dog;
+        }
+    }
+    return nullptr;
+}
+
+std::shared_ptr<Dog> GameSession::AddDog(Dog::DogName user_name, const bool randomize_spawn)
+{
+    auto spawn_point = GenerateSpawn(randomize_spawn);
+
+    auto new_dog = std::make_shared<Dog>(Dog::DogId(dogs_.size()), user_name, spawn_point);
+    dogs_.emplace_back(new_dog);
+    return new_dog;
 }
 
 void GameSession::AddRandomLoot()
@@ -172,6 +213,22 @@ void Game::AddMap(Map map) {
             throw;
         }
     }
+}
+
+const Map* Game::FindMap(const Map::Id& id) const noexcept
+{
+    if (auto it = map_id_to_index_.find(id); it != map_id_to_index_.end()) {
+        return &maps_.at(it->second);
+    }
+    return nullptr;
+}
+
+const std::shared_ptr<GameSession> Game::FindGameSession(GameSession::SessionId id) const noexcept
+{
+    if (*id < sessions_.size()) {
+        return sessions_[*id];
+    }
+    return nullptr;
 }
 
 //нахождение нужной сессии без добавления собаки

@@ -19,6 +19,7 @@ add_library(MyLib STATIC
     src/providers.h
     src/model.h
     src/model.cpp
+    src/state_serialization.cpp
     src/state_serialization.h
     src/loot_generator.h
     src/loot_generator.cpp
@@ -48,8 +49,11 @@ add_executable(game_server
     src/ticker.h
     src/loot_extra_data.cpp
     src/loot_extra_data.h
+    src/save_and_restore_state.cpp
     src/save_and_restore_state.h
+    src/serializing_listener.cpp
     src/serializing_listener.h
+    src/connection_pool.cpp
     src/connection_pool.h
     src/data_base.cpp
     src/data_base.h
@@ -67,4 +71,3 @@ add_executable(game_server_tests
 )
 
 target_link_libraries(game_server_tests PRIVATE CONAN_PKG::catch2 MyLib)
-#comm

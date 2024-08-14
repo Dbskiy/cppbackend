@@ -140,108 +140,100 @@ private:
     Offset offset_;
 };
 
-    class Map {
-    public:
-        using Id = util::Tagged<std::string, Map>;
-        using DogSpeed = util::Tagged<double, Map>;
-        using BagCapacity = util::Tagged<size_t, Map>;
-        using Roads = std::vector<Road>;
-        using Buildings = std::vector<Building>;
-        using Offices = std::vector<Office>;
-        using LootTypesNum = util::Tagged<int, Map>;
-        using loot_variant = std::variant<std::string, int64_t, double>;
-        using loot_type = std::unordered_map<std::string, loot_variant>;
-        using LootTypesProp = std::vector<loot_type>;
+class Map {
+public:
+    using Id = util::Tagged<std::string, Map>;
+    using DogSpeed = util::Tagged<double, Map>;
+    using BagCapacity = util::Tagged<size_t, Map>;
+    using Roads = std::vector<Road>;
+    using Buildings = std::vector<Building>;
+    using Offices = std::vector<Office>;
+    using LootTypesNum = util::Tagged<int, Map>;
+    using loot_variant = std::variant<std::string, int64_t, double>;
+    using loot_type = std::unordered_map<std::string, loot_variant>;
+    using LootTypesProp = std::vector<loot_type>;
 
-        Map(Id id, std::string name, DogSpeed speed, BagCapacity bag_capacity,
-            LootTypesNum loot_types_num, const LootTypesProp& loot_types_prop) noexcept
-            : id_(std::move(id))
-            , name_(std::move(name))
-            , speed_(std::move(speed))
-            , bag_capacity_(std::move(bag_capacity))
-            , loot_types_num_(std::move(loot_types_num))
-            , loot_types_prop_(loot_types_prop)
-        {
-        }
+    Map(Id id, std::string name, DogSpeed speed, BagCapacity bag_capacity,
+        LootTypesNum loot_types_num, const LootTypesProp& loot_types_prop) noexcept
+        : id_(std::move(id))
+        , name_(std::move(name))
+        , speed_(std::move(speed))
+        , bag_capacity_(std::move(bag_capacity))
+        , loot_types_num_(std::move(loot_types_num))
+        , loot_types_prop_(loot_types_prop)
+    {
+    }
 
-        const Id& GetId() const noexcept {
-            return id_;
-        }
+    const Id& GetId() const noexcept {
+        return id_;
+    }
 
-        const std::string& GetName() const noexcept {
-            return name_;
-        }
+    const std::string& GetName() const noexcept {
+        return name_;
+    }
 
-        const Buildings& GetBuildings() const noexcept {
-            return buildings_;
-        }
+    const Buildings& GetBuildings() const noexcept {
+        return buildings_;
+    }
 
-        const Roads& GetRoads() const noexcept {
-            return roads_;
-        }
+    const Roads& GetRoads() const noexcept {
+        return roads_;
+    }
 
-        const Offices& GetOffices() const noexcept {
-            return offices_;
-        }
+    const Offices& GetOffices() const noexcept {
+        return offices_;
+    }
 
-        const DogSpeed& GetDogSpeed() const noexcept {
-            return speed_;
-        }
+    const DogSpeed& GetDogSpeed() const noexcept {
+        return speed_;
+    }
 
-        const LootTypesNum& GetLootTypesNum() const noexcept {
-            return loot_types_num_;
-        }
+    const LootTypesNum& GetLootTypesNum() const noexcept {
+        return loot_types_num_;
+    }
 
-        const LootTypesProp& GetLootTypesProp() const noexcept {
-            return loot_types_prop_;
-        }
+    const LootTypesProp& GetLootTypesProp() const noexcept {
+        return loot_types_prop_;
+    }
 
-        const loot_type& GetCertainLootType(int type) const noexcept {
-            return loot_types_prop_[type];
-        }
+    const loot_type& GetCertainLootType(int type) const noexcept {
+        return loot_types_prop_[type];
+    }
 
-        const BagCapacity& GetBagCapacity() const noexcept {
-            return bag_capacity_;
-        }
+    const BagCapacity& GetBagCapacity() const noexcept {
+        return bag_capacity_;
+    }
 
-        void AddRoad(const Road& road) {
-            roads_.emplace_back(road);
+    void AddRoad(const Road& road) {
+        roads_.emplace_back(road);
 
-        }
+    }
 
-        const Road& GetRandomRoad() const {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dis_road(0, roads_.size() - 1);
+    const Road& GetRandomRoad() const;
 
-            int road_index = dis_road(gen);
+    std::vector<Road> FindRoadsAt(double x, double y) const;
 
-            return roads_[road_index];
-        }
+    void AddBuilding(const Building& building) {
+        buildings_.emplace_back(building);
+    }
 
-        std::vector<Road> FindRoadsAt(double x, double y) const;
+    void AddOffice(Office office);
 
-        void AddBuilding(const Building& building) {
-            buildings_.emplace_back(building);
-        }
+private:
+    using OfficeIdToIndex = std::unordered_map<Office::Id, size_t, util::TaggedHasher<Office::Id>>;
 
-        void AddOffice(Office office);
+    Id id_;
+    std::string name_;
+    DogSpeed speed_;
+    BagCapacity bag_capacity_;
+    Roads roads_;
+    Buildings buildings_;
+    LootTypesNum loot_types_num_;
+    LootTypesProp loot_types_prop_;
 
-    private:
-        using OfficeIdToIndex = std::unordered_map<Office::Id, size_t, util::TaggedHasher<Office::Id>>;
-
-        Id id_;
-        std::string name_;
-        DogSpeed speed_;
-        BagCapacity bag_capacity_;
-        Roads roads_;
-        Buildings buildings_;
-        LootTypesNum loot_types_num_;
-        LootTypesProp loot_types_prop_;
-
-        OfficeIdToIndex warehouse_id_to_index_;
-        Offices offices_;
-    };
+    OfficeIdToIndex warehouse_id_to_index_;
+    Offices offices_;
+};
 
 class Dog {
 public:
@@ -326,33 +318,11 @@ public:
         dogs_ = dogs;
     }
 
-    void DeleteDog(std::shared_ptr<Dog> dog_to_remove) {
-        for (size_t i = 0; i < dogs_.size(); i++)
-        {
-            if (dogs_[i]->GetDogId() == dog_to_remove->GetDogId()) {
-                dogs_.erase(dogs_.begin() + i);
-                return;
-            }
-        }
-    }
+    void DeleteDog(std::shared_ptr<Dog> dog_to_remove);
 
-    const std::shared_ptr<Dog> GetDogById(Dog::DogId id) const noexcept {
-        for (auto& dog : dogs_) {
-            if (id == dog->GetDogId()) {
-                return dog;
-            }
-        }
-        return nullptr;
-    }
+    const std::shared_ptr<Dog> GetDogById(Dog::DogId id) const noexcept;
 
-    std::shared_ptr<Dog> AddDog(Dog::DogName user_name, const bool randomize_spawn) {
-        auto spawn_point = GenerateSpawn(randomize_spawn);
-
-        auto new_dog = std::make_shared<Dog>(Dog::DogId(dogs_.size()), user_name, spawn_point);
-        dogs_.emplace_back(new_dog);
-        return new_dog;
-
-    }
+    std::shared_ptr<Dog> AddDog(Dog::DogName user_name, const bool randomize_spawn);
 
     void AddRandomLoot();
 
@@ -403,20 +373,9 @@ public:
         return sessions_;
     }
 
-    const Map* FindMap(const Map::Id& id) const noexcept {
-        if (auto it = map_id_to_index_.find(id); it != map_id_to_index_.end()) {
-            return &maps_.at(it->second);
-        }
-        return nullptr;
-    }
+    const Map* FindMap(const Map::Id& id) const noexcept;
 
-    const std::shared_ptr<GameSession> FindGameSession(GameSession::SessionId id) const noexcept {
-        if (*id < sessions_.size()) {
-            return sessions_[*id];
-        }
-
-        return nullptr;
-    }
+    const std::shared_ptr<GameSession> FindGameSession(GameSession::SessionId id) const noexcept;
 
     std::shared_ptr<GameSession> ConnectToSession(Map::Id map_id);
 

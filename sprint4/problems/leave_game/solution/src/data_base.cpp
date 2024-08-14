@@ -16,7 +16,6 @@ namespace db {
 				ON retired_players (score DESC, playTime ASC, name ASC);)"_zv);
 
 		w_.commit();
-
 	}
 
 	void DataBase::RetirePlayers(std::vector<RetiredPlayer>& retired_players_)
